@@ -26,12 +26,6 @@ export default function QuizEditorPage() {
   const params = useParams()
   const quizId = params.quizId as string
 
-  useEffect(() => {
-    if (quizId) {
-      fetchQuiz()
-    }
-  }, [quizId])
-
   const fetchQuiz = async () => {
     try {
       const response = await api.quiz.detail(quizId)
@@ -47,6 +41,12 @@ export default function QuizEditorPage() {
     }
     setIsLoading(false)
   }
+
+  useEffect(() => {
+    if (quizId) {
+      fetchQuiz()
+    }
+  }, [quizId])
 
   const saveQuestion = async (e: React.FormEvent) => {
     e.preventDefault()

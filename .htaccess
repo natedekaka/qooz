@@ -1,6 +1,6 @@
-Options -Indexes +FollowSymLinks
+DirectoryIndex index.php index.html
 RewriteEngine On
 RewriteBase /qooz/
-
-# Allow all requests
-Require all granted
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^api/(.*)$ qooz/api/$1 [L]

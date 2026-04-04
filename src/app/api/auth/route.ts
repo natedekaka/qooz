@@ -1,82 +1,53 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase, generateUUID } from '@/lib/db';
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8090/qooz/api';
+
+async function fetchAPI(endpoint: string, data?: Record<string, string>) {
+  const isGet = !data;
+  const url = isGet 
+    ? `${API_URL}/${endpoint}` 
+    : `${API_URL}/${endpoint}`;
+  
+  try {
+    const options: RequestInit = isGet 
+      ? { method: 'GET' }
+      : {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: new URLSearchParams(data).toString()
+        };
+    
+    const res = await fetch(url, options);
+    const text = await res.text();
+    try {
+      return JSON.parse(text);
+    } catch {
+      return { error: 'Invalid response', raw: text };
+    }
+  } catch (err) {
+    console.error('API error:', err);
+    return { error: 'Network error' };
+  }
+}
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const { action, email, password, nama } = body;
 
-    if (action === 'register') {
-      if (!email || !password || !nama) {
-        return NextResponse.json({ error: 'Data tidak lengkap' }, { status: 400 });
-      }
-
-      const id = generateUUID();
-      const { data: existingUser } = await supabase
-        .from('users')
-        .select('id')
-        .eq('email', email)
-        .single();
-
-      if (existingUser) {
-        return NextResponse.json({ error: 'Email sudah terdaftar' }, { status: 400 });
-      }
-
-      const { data, error } = await supabase
-        .from('users')
-        .insert({
-          id,
-          email,
-          password_hash: password,
-          nama_lengkap: nama,
-        })
-        .select()
-        .single();
-
-      if (error) {
-        return NextResponse.json({ error: 'Email sudah terdaftar' }, { status: 400 });
-      }
-
-      return NextResponse.json({
-        success: true,
-        user: {
-          id: data.id,
-          email: data.email,
-          nama_lengkap: data.nama_lengkap,
-        },
-      });
-    }
-
     if (action === 'login') {
-      if (!email || !password) {
-        return NextResponse.json({ error: 'Data tidak lengkap' }, { status: 400 });
-      }
-
-      const { data: user } = await supabase
-        .from('users')
-        .select('*')
-        .eq('email', email)
-        .single();
-
-      if (user && user.password_hash === password) {
-        const token = generateUUID();
-        return NextResponse.json({
-          success: true,
-          user: {
-            id: user.id,
-            email: user.email,
-            nama_lengkap: user.nama_lengkap,
-          },
-          token,
-        });
-      }
-
-      return NextResponse.json({ error: 'Email atau password salah' }, { status: 401 });
+      const result = await fetchAPI('auth/index.php', { action: 'login', email, password });
+      return NextResponse.json(result);
+    }
+    
+    if (action === 'register') {
+      const result = await fetchAPI('auth/index.php', { action: 'register', email, password, nama });
+      return NextResponse.json(result);
     }
 
-    return NextResponse.json({ error: 'Action tidak valid' }, { status: 400 });
-  } catch (error) {
-    console.error('Auth error:', error);
+    return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
+  } catch (err) {
+    console.error('Auth route error:', err);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

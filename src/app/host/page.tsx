@@ -14,10 +14,6 @@ export default function HostPage() {
   
   const router = useRouter()
 
-  useEffect(() => {
-    checkUser()
-  }, [])
-
   const checkUser = () => {
     const userStr = localStorage.getItem('qooz_user')
     if (!userStr) {
@@ -39,6 +35,10 @@ export default function HostPage() {
     }
     setIsLoading(false)
   }
+
+  useEffect(() => {
+    checkUser()
+  }, [])
 
   const createQuiz = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -177,7 +177,7 @@ export default function HostPage() {
                   value={newQuiz.judul}
                   onChange={(e) => setNewQuiz({ ...newQuiz, judul: e.target.value })}
                   className="qooz-input"
-                  placeholder="Contoh: Matematika Kelas 5"
+                  placeholder="Contoh: Kuis Informatika Kelas X"
                   required
                 />
               </div>

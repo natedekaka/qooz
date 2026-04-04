@@ -31,7 +31,7 @@ export default function PlayPage() {
         // Navigate to game
         router.push(`/play/${pin}`)
       }
-    } catch (err) {
+    } catch {
       setError('Terjadi kesalahan')
     } finally {
       setIsLoading(false)

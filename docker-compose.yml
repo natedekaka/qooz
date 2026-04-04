@@ -2,18 +2,20 @@ version: '3.8'
 
 services:
   qooz-app:
-    image: docker.io/library/node:18-alpine
+    image: node:20-alpine
     container_name: qooz-web
     ports:
       - "3000:3000"
-    volumes:
-      - ./src/qooz:/app
     working_dir: /app
+    volumes:
+      - .:/app
+      - /app/node_modules
     environment:
-      - NEXT_PUBLIC_API_URL=http://localhost:8090/qooz/api
+      - NEXT_PUBLIC_API_URL=http://host.containers.internal:8090/qooz/api
       - NEXT_PUBLIC_POLL_INTERVAL=2000
-      - NEXT_PUBLIC_GAME_TIMEOUT=30000
-    command: sh -c "npm install && npm run start"
+    extra_hosts:
+      - "host.containers.internal:host-gateway"
+    command: sh -c "npm run build && npm run start"
     depends_on:
       - qooz-api
     networks:
@@ -21,27 +23,20 @@ services:
     restart: unless-stopped
 
   qooz-api:
-    image: docker.io/library/php:8.2-apache
+    build:
+      context: .
+      dockerfile: Dockerfile.api
     container_name: qooz-api
     ports:
       - "8090:80"
     volumes:
-      - ./src/qooz:/var/www/html:z
-      - ./src/qooz/api:/var/www/html/api:z
-    environment:
-      - DB_HOST=qooz-db
-      - DB_NAME=qooz_db
-      - DB_USER=qooz_user
-      - DB_PASS=qooz_pass_2024
+      - ./mysql-schema.sql:/docker-entrypoint-initdb.d/schema.sql:ro
     depends_on:
-      - qooz-db
+      qooz-db:
+        condition: service_healthy
     networks:
       - qooz-net
     restart: unless-stopped
-    command: >
-      bash -c "a2enmod rewrite headers &&
-               echo 'DirectoryIndex index.php index.html' > /var/www/html/.htaccess &&
-               apache2-foreground"
 
   qooz-db:
     image: docker.io/library/mariadb:10.11
@@ -55,9 +50,15 @@ services:
       - "3306:3306"
     volumes:
       - qooz-dbdata:/var/lib/mysql
+      - ./mysql-schema.sql:/docker-entrypoint-initdb.d/schema.sql:ro
     networks:
       - qooz-net
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      start_period: 10s
+      timeout: 5s
+      retries: 5
 
   qooz-pma:
     image: docker.io/library/phpmyadmin:latest

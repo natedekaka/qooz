@@ -41,7 +41,7 @@ export default function Home() {
       </div>
 
       <div className="mt-12 text-center text-white/70 text-sm">
-        <p>Butuh bantuan? <a href="#" className="underline hover:text-white">Pelajari cara menggunakan Qooz</a></p>
+        <p>Butuh bantuan? <Link href="/tutorial" className="underline hover:text-white">Pelajari cara menggunakan Qooz</Link></p>
       </div>
     </div>
   )

@@ -1,8 +1,8 @@
 'use client'
 
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { api } from '@/lib/api'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import type { GameSession, Player, Question, Answer } from '@/types'
 
@@ -15,11 +15,8 @@ export default function GameHostPage() {
   const [answers, setAnswers] = useState<Answer[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [timeLeft, setTimeLeft] = useState(0)
-  const [showResults, setShowResults] = useState(false)
   const [gamePhase, setGamePhase] = useState<'lobby' | 'countdown' | 'playing' | 'result' | 'finished'>('lobby')
-  const [lastUpdate, setLastUpdate] = useState(0)
   
-  const router = useRouter()
   const searchParams = useSearchParams()
   const sessionId = searchParams.get('session')
 
@@ -73,27 +70,12 @@ export default function GameHostPage() {
             setGamePhase('playing')
           }
         }
-        
-        setLastUpdate(response.timestamp)
       }
     } catch (err) {
       console.error('fetchGameState exception:', err)
     }
     setIsLoading(false)
   }, [sessionId, currentQuestion, gamePhase])
-
-  useEffect(() => {
-    if (sessionId) {
-      fetchGameState()
-      
-      const pollInterval = parseInt(process.env.NEXT_PUBLIC_POLL_INTERVAL || '2000')
-      // Poll every 2 seconds (configurable via env)
-      const interval = setInterval(fetchGameState, pollInterval)
-      return () => clearInterval(interval)
-    } else {
-      setIsLoading(false)
-    }
-  }, [sessionId, fetchGameState])
 
   const startGame = async () => {
     if (!sessionId) return
@@ -120,46 +102,11 @@ export default function GameHostPage() {
     }
   }
 
-  // Timer effect
-  useEffect(() => {
-    if (gamePhase !== 'playing' || !currentQuestion || timeLeft <= 0) return
-
-    const timer = setInterval(() => {
-      setTimeLeft(prev => {
-        if (prev <= 1) {
-          clearInterval(timer)
-          endQuestion()
-          return 0
-        }
-        return prev - 1
-      })
-    }, 1000)
-
-    return () => clearInterval(timer)
-  }, [gamePhase, timeLeft, currentQuestion])
-
-  const endQuestion = async () => {
-    if (!sessionId || !currentQuestion) return
-
-    setGamePhase('result')
-    setShowResults(true)
-
-    try {
-      const response = await api.game.endQuestion(sessionId)
-      if (response.players) {
-        setPlayers(response.players)
-      }
-    } catch (err) {
-      console.error('endQuestion error:', err)
-    }
-  }
-
   const nextQuestion = async () => {
     if (!sessionId) return
 
     console.log('nextQuestion called, sessionId:', sessionId, 'current question_index:', session?.question_index)
     setGamePhase('countdown')
-    setShowResults(false)
     setCurrentQuestion(null)
 
     try {
@@ -191,6 +138,52 @@ export default function GameHostPage() {
       setGamePhase('result')
     }
   }
+
+  const endQuestion = async () => {
+    if (!sessionId || !currentQuestion) return
+
+    setGamePhase('result')
+
+    try {
+      const response = await api.game.endQuestion(sessionId)
+      if (response.players) {
+        setPlayers(response.players)
+      }
+    } catch (err) {
+      console.error('endQuestion error:', err)
+    }
+  }
+
+  // Timer effect - countdown for playing phase
+  useEffect(() => {
+    if (gamePhase !== 'playing' || timeLeft <= 0) return
+
+    const timer = setInterval(() => {
+      setTimeLeft(prev => {
+        if (prev <= 1) {
+          clearInterval(timer)
+          endQuestion()
+          return 0
+        }
+        return prev - 1
+      })
+    }, 1000)
+
+    return () => clearInterval(timer)
+  }, [gamePhase, timeLeft])
+
+  useEffect(() => {
+    if (sessionId) {
+      fetchGameState()
+      
+      const pollInterval = parseInt(process.env.NEXT_PUBLIC_POLL_INTERVAL || '2000')
+      // Poll every 2 seconds (configurable via env)
+      const interval = setInterval(fetchGameState, pollInterval)
+      return () => clearInterval(interval)
+    } else {
+      setIsLoading(false)
+    }
+  }, [sessionId, fetchGameState])
 
   const optionLabels = ['A', 'B', 'C', 'D']
   const optionColors = ['bg-blue-500', 'bg-yellow-500', 'bg-purple-500', 'bg-red-500']
@@ -346,7 +339,9 @@ export default function GameHostPage() {
               {optionLabels[currentQuestion.jawaban_benar - 1]}. {['opsi_1', 'opsi_2', 'opsi_3', 'opsi_4'].map(k => currentQuestion[k as keyof typeof currentQuestion])[currentQuestion.jawaban_benar - 1]}
             </div>
             <p className="text-gray-500 mt-4">
-              {correctCount} dari {answers.filter(a => a.question_id === currentQuestion.id).length} benar
+              {answers.filter(a => a.question_id === currentQuestion.id).length > 0 
+                ? `${correctCount} dari ${answers.filter(a => a.question_id === currentQuestion.id).length} benar`
+                : 'Belum ada yang menjawab'}
             </p>
           </div>
 

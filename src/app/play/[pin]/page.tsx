@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 import { api } from '@/lib/api'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
-import type { GameSession, Question, Answer, Player } from '@/types'
+import type { GameSession, Question, Player } from '@/types'
 
 export default function PlayerGamePage() {
   const params = useParams()
@@ -25,19 +25,7 @@ export default function PlayerGamePage() {
 
   const questionStartRef = useRef<number>(0)
 
-  useEffect(() => {
-    const playerId = localStorage.getItem('qooz_player_id')
-    const sessionId = localStorage.getItem('qooz_session_id')
-
-    if (!playerId || !sessionId) {
-      router.push('/play')
-      return
-    }
-
-    fetchInitialData(playerId, sessionId)
-  }, [])
-
-  const fetchInitialData = async (playerId: string, sessionId: string) => {
+  const fetchInitialData = async (playerId: string) => {
     try {
       const response = await api.player.state(playerId)
       
@@ -75,6 +63,17 @@ export default function PlayerGamePage() {
     }
     setIsLoading(false)
   }
+
+  useEffect(() => {
+    const playerId = localStorage.getItem('qooz_player_id')
+
+    if (!playerId) {
+      router.push('/play')
+      return
+    }
+
+    fetchInitialData(playerId)
+  }, [])
 
   // Polling for updates
   useEffect(() => {
@@ -215,9 +214,6 @@ export default function PlayerGamePage() {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center p-4">
         <div className="text-center">
-          <div className="bg-blue-500 text-white text-xs p-1 mb-2">
-            DEBUG: gamePhase={gamePhase}, currentQuestion={currentQuestion?.id || 'null'}
-          </div>
           <div className="w-24 h-24 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-6 animate-pulse">
             <span className="text-5xl">⏳</span>
           </div>
@@ -240,9 +236,6 @@ export default function PlayerGamePage() {
   if (gamePhase === 'countdown') {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center">
-        <div className="bg-blue-500 text-white text-xs p-1 mb-2">
-          DEBUG: gamePhase={gamePhase}, question={currentQuestion?.id || 'null'}
-        </div>
         <h1 className="text-6xl md:text-8xl font-black text-purple-600 animate-pulse">
           S I A P
         </h1>
@@ -254,9 +247,6 @@ export default function PlayerGamePage() {
   if (gamePhase === 'answering' && currentQuestion) {
     return (
       <div className="min-h-screen flex flex-col">
-        <div className="bg-yellow-500 text-white text-xs p-1 text-center">
-          Question ID: {currentQuestion.id}
-        </div>
         {/* Timer bar */}
         <div className="h-2 bg-gray-200">
           <div
@@ -296,13 +286,8 @@ export default function PlayerGamePage() {
     // Use loose equality or convert to number to handle string vs number comparison
     const isCorrect = Number(selectedAnswer) === Number(currentQuestion?.jawaban_benar)
     
-    console.log('Correct phase: selectedAnswer=', selectedAnswer, 'jawaban_benar=', currentQuestion?.jawaban_benar, 'isCorrect=', isCorrect)
-    
     return (
       <div className="min-h-screen flex flex-col items-center justify-center p-4">
-        <div className="bg-blue-500 text-white text-xs p-1 mb-2">
-          DEBUG: selectedAnswer={selectedAnswer} jawaban_benar={currentQuestion?.jawaban_benar}
-        </div>
         <div className={`text-center ${isCorrect ? 'animate-bounce-in' : 'animate-slide-up'}`}>
           <div className={`w-32 h-32 rounded-full flex items-center justify-center mx-auto mb-6 ${
             isCorrect ? 'bg-green-500' : 'bg-red-500'

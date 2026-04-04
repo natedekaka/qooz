@@ -1,6 +1,6 @@
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || '/api';
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8090/qooz/api';
 
-async function fetchAPI(endpoint: string, data?: Record<string, any>) {
+async function fetchAPI(endpoint: string, data?: Record<string, string>) {
   const url = `${API_BASE}/${endpoint}`;
 
   try {
@@ -9,15 +9,20 @@ async function fetchAPI(endpoint: string, data?: Record<string, any>) {
       response = await fetch(url, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
+          'Content-Type': 'application/x-www-form-urlencoded',
         },
-        body: JSON.stringify(data),
+        body: new URLSearchParams(data).toString(),
       });
     } else {
       response = await fetch(url);
     }
 
-    return await response.json();
+    const text = await response.text();
+    try {
+      return JSON.parse(text);
+    } catch {
+      return { error: 'Invalid response', raw: text };
+    }
   } catch (err) {
     console.error('API fetch error:', err);
     return { error: 'Network error' };
@@ -27,51 +32,51 @@ async function fetchAPI(endpoint: string, data?: Record<string, any>) {
 export const api = {
   auth: {
     login: (email: string, password: string) =>
-      fetchAPI('auth', { action: 'login', email, password }),
+      fetchAPI('auth/index.php', { action: 'login', email, password }),
     register: (email: string, password: string, nama: string) =>
-      fetchAPI('auth', { action: 'register', email, password, nama }),
+      fetchAPI('auth/index.php', { action: 'register', email, password, nama }),
   },
 
   quiz: {
     list: (userId: string) =>
-      fetchAPI('quiz?action=list&user_id=' + userId),
+      fetchAPI(`quiz/index.php?action=list&user_id=${userId}`),
     detail: (id: string) =>
-      fetchAPI('quiz?action=detail&id=' + id),
+      fetchAPI(`quiz/index.php?action=detail&id=${id}`),
     create: (userId: string, judul: string, deskripsi: string) =>
-      fetchAPI('quiz', { action: 'create', user_id: userId, judul, deskripsi }),
+      fetchAPI('quiz/index.php', { action: 'create', user_id: userId, judul, deskripsi }),
     delete: (userId: string, quizId: string) =>
-      fetchAPI('quiz', { action: 'delete', user_id: userId, quiz_id: quizId }),
-    addQuestion: (userId: string, quizId: string, soal: string, opsi1: string, opsi2: string, opsi3: string, opsi4: string, jawaban: number, waktu: number) =>
-      fetchAPI('quiz', { action: 'add_question', user_id: userId, quiz_id: quizId, soal, opsi_1: opsi1, opsi_2: opsi2, opsi_3: opsi3, opsi_4: opsi4, jawaban_benar: jawaban, waktu_detik: waktu }),
-    updateQuestion: (userId: string, questionId: string, soal: string, opsi1: string, opsi2: string, opsi3: string, opsi4: string, jawaban: number, waktu: number) =>
-      fetchAPI('quiz', { action: 'update_question', user_id: userId, question_id: questionId, soal, opsi_1: opsi1, opsi_2: opsi2, opsi_3: opsi3, opsi_4: opsi4, jawaban_benar: jawaban, waktu_detik: waktu }),
+      fetchAPI('quiz/index.php', { action: 'delete', user_id: userId, quiz_id: quizId }),
+    addQuestion: (userId: string, quizId: string, soal: string, opsi1: string, opsi2: string, opsi3: string, opsi4: string, jawaban: string | number, waktu: string | number) =>
+      fetchAPI('quiz/index.php', { action: 'add_question', user_id: userId, quiz_id: quizId, soal, opsi_1: opsi1, opsi_2: opsi2, opsi_3: opsi3, opsi_4: opsi4, jawaban_benar: String(jawaban), waktu_detik: String(waktu) }),
+    updateQuestion: (userId: string, questionId: string, soal: string, opsi1: string, opsi2: string, opsi3: string, opsi4: string, jawaban: string | number, waktu: string | number) =>
+      fetchAPI('quiz/index.php', { action: 'update_question', user_id: userId, question_id: questionId, soal, opsi_1: opsi1, opsi_2: opsi2, opsi_3: opsi3, opsi_4: opsi4, jawaban_benar: String(jawaban), waktu_detik: String(waktu) }),
     deleteQuestion: (userId: string, quizId: string, questionId: string) =>
-      fetchAPI('quiz', { action: 'delete_question', user_id: userId, quiz_id: quizId, question_id: questionId }),
+      fetchAPI('quiz/index.php', { action: 'delete_question', user_id: userId, quiz_id: quizId, question_id: questionId }),
   },
 
   game: {
     create: (quizId: string, userId: string) =>
-      fetchAPI('game', { action: 'create', quiz_id: quizId, user_id: userId }),
+      fetchAPI('game/index.php', { action: 'create', quiz_id: quizId, user_id: userId }),
     state: (sessionId: string) =>
-      fetchAPI('game?action=state&session_id=' + sessionId),
+      fetchAPI(`game/index.php?action=state&session_id=${sessionId}`),
     byPin: (pin: string) =>
-      fetchAPI('game?action=by_pin&pin=' + pin),
+      fetchAPI(`game/index.php?action=by_pin&pin=${pin}`),
     start: (sessionId: string) =>
-      fetchAPI('game', { action: 'start', session_id: sessionId }),
+      fetchAPI('game/index.php', { action: 'start', session_id: sessionId }),
     next: (sessionId: string) =>
-      fetchAPI('game', { action: 'next', session_id: sessionId }),
+      fetchAPI('game/index.php', { action: 'next', session_id: sessionId }),
     endQuestion: (sessionId: string) =>
-      fetchAPI('game', { action: 'end_question', session_id: sessionId }),
+      fetchAPI('game/index.php', { action: 'end_question', session_id: sessionId }),
   },
 
   player: {
     join: (pin: string, nama: string) =>
-      fetchAPI('player', { action: 'join', pin, nama }),
-    answer: (playerId: string, questionId: string, sessionId: string, jawaban: number, waktuMs: number) =>
-      fetchAPI('player', { action: 'answer', player_id: playerId, question_id: questionId, session_id: sessionId, jawaban, waktu_ms: waktuMs }),
+      fetchAPI('player/index.php', { action: 'join', pin, nama }),
+    answer: (playerId: string, questionId: string, sessionId: string, jawaban: string | number, waktuMs: string | number) =>
+      fetchAPI('player/index.php', { action: 'answer', player_id: playerId, question_id: questionId, session_id: sessionId, jawaban: String(jawaban), waktu_ms: String(waktuMs) }),
     score: (playerId: string) =>
-      fetchAPI('player', { action: 'score', player_id: playerId }),
+      fetchAPI('player/index.php', { action: 'score', player_id: playerId }),
     state: (playerId: string) =>
-      fetchAPI('player?action=state&player_id=' + playerId),
+      fetchAPI(`player/index.php?action=state&player_id=${playerId}`),
   },
 }
