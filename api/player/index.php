@@ -27,6 +27,13 @@ if ($method === 'POST') {
             response(['error' => 'Game sudah selesai'], 400);
         }
         
+        // Check for duplicate name in this session (case-insensitive)
+        $namaLower = strtolower(trim($nama));
+        $nameCheck = conn()->query("SELECT id FROM players WHERE session_id = '{$session['id']}' AND LOWER(nama_siswa) = '$namaLower'");
+        if ($nameCheck->num_rows > 0) {
+            response(['error' => 'Nama sudah digunakan player lain di game ini'], 400);
+        }
+        
         $id = generateUUID();
         
         $stmt = conn()->prepare("INSERT INTO players (id, session_id, nama_siswa, skor_total) VALUES (?, ?, ?, 0)");

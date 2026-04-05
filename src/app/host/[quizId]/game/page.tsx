@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { api } from '@/lib/api'
 import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
@@ -16,6 +16,7 @@ export default function GameHostPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [timeLeft, setTimeLeft] = useState(0)
   const [gamePhase, setGamePhase] = useState<'lobby' | 'countdown' | 'playing' | 'result' | 'finished'>('lobby')
+  const contentRef = useRef<HTMLDivElement>(null)
   
   const searchParams = useSearchParams()
   const sessionId = searchParams.get('session')
@@ -23,22 +24,20 @@ export default function GameHostPage() {
   const fetchGameState = useCallback(async () => {
     if (!sessionId) return
 
-    setIsLoading(true)
     try {
       const response = await api.game.state(sessionId)
       
+      // Set loading to false after first successful fetch
+      setIsLoading(false)
+      
       if (response.error) {
         console.error('fetchGameState error:', response.error)
-        setIsLoading(false)
         return
       }
-      
-      console.log('fetchGameState response, question_index:', response.session?.question_index, 'current_question_id:', response.question?.id)
       
       if (response.session) {
         setSession(response.session)
         
-        // Get quiz info
         if (response.session.quiz_id) {
           const quizResponse = await api.quiz.detail(response.session.quiz_id)
           if (quizResponse.quiz) {
@@ -47,25 +46,19 @@ export default function GameHostPage() {
           }
         }
         
-        // Update players
         setPlayers(response.players || [])
         
-        // Update answers
         if (response.answers) {
           setAnswers(response.answers)
         }
         
-        // Update current question - only if changed and we're not in result phase
         if (response.question && response.question.id !== currentQuestion?.id && gamePhase !== 'result') {
-          console.log('Updating currentQuestion to:', response.question.id)
           setCurrentQuestion(response.question)
         }
         
-        // Determine game phase - be more careful about transitions
         if (response.session.status === 'finished') {
           setGamePhase('finished')
         } else if (response.session.question_index >= 0 && response.question) {
-          // Only transition to playing from lobby/countdown, not from result
           if (gamePhase === 'lobby' || gamePhase === 'countdown') {
             setGamePhase('playing')
           }
@@ -73,8 +66,8 @@ export default function GameHostPage() {
       }
     } catch (err) {
       console.error('fetchGameState exception:', err)
+      setIsLoading(false)
     }
-    setIsLoading(false)
   }, [sessionId, currentQuestion, gamePhase])
 
   const startGame = async () => {
@@ -89,7 +82,6 @@ export default function GameHostPage() {
         setTimeLeft(response.question.waktu_detik)
       }
       
-      // Start countdown
       setTimeout(() => {
         setGamePhase('playing')
         if (response.question) {
@@ -105,32 +97,23 @@ export default function GameHostPage() {
   const nextQuestion = async () => {
     if (!sessionId) return
 
-    console.log('nextQuestion called, sessionId:', sessionId, 'current question_index:', session?.question_index)
     setGamePhase('countdown')
     setCurrentQuestion(null)
 
     try {
       const response = await api.game.next(sessionId)
-      console.log('nextQuestion response:', response)
-      console.log('response.finished:', response.finished)
-      console.log('response.question:', response.question)
       
       if (response.finished) {
-        console.log('Setting gamePhase to finished')
         setGamePhase('finished')
         setCurrentQuestion(null)
       } else if (response.question) {
-        console.log('Setting new question:', response.question.id, 'waktu:', response.question.waktu_detik)
         setCurrentQuestion(response.question)
         setTimeLeft(response.question.waktu_detik || 20)
         
-        // Force update by using a small timeout
         setTimeout(() => {
-          console.log('Setting gamePhase to playing after 3s')
           setGamePhase('playing')
         }, 3000)
       } else {
-        console.warn('No question in response, response:', response)
         setGamePhase('result')
       }
     } catch (err) {
@@ -154,7 +137,6 @@ export default function GameHostPage() {
     }
   }
 
-  // Timer effect - countdown for playing phase
   useEffect(() => {
     if (gamePhase !== 'playing' || timeLeft <= 0) return
 
@@ -175,9 +157,7 @@ export default function GameHostPage() {
   useEffect(() => {
     if (sessionId) {
       fetchGameState()
-      
       const pollInterval = parseInt(process.env.NEXT_PUBLIC_POLL_INTERVAL || '2000')
-      // Poll every 2 seconds (configurable via env)
       const interval = setInterval(fetchGameState, pollInterval)
       return () => clearInterval(interval)
     } else {
@@ -190,8 +170,10 @@ export default function GameHostPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex flex-col items-center justify-center p-4">
+        <div className="w-16 h-16 border-4 border-white/30 border-t-white rounded-full animate-spin mb-4" />
         <div className="text-white text-xl">Memuat game...</div>
+        <p className="text-white/60 text-sm mt-2">Menghubungkan ke server...</p>
       </div>
     )
   }
@@ -207,17 +189,17 @@ export default function GameHostPage() {
         </div>
 
         <div className="qooz-card text-center py-12 px-16 animate-pulse-glow mb-8">
-          <p className="text-gray-500 mb-2">Game PIN</p>
+          <p className="text-gray-500 mb-2 text-sm">Game PIN</p>
           <p className="text-7xl md:text-9xl font-black text-purple-600 tracking-widest">
             {session?.pin}
           </p>
         </div>
 
-        <div className="qooz-card w-full max-w-2xl mb-8">
-          <h2 className="text-xl font-bold text-gray-800 mb-4">
-            Player joined ({players.length})
+        <div className="qooz-card w-full max-w-md mb-6">
+          <h2 className="text-lg font-bold text-gray-800 mb-3 flex items-center gap-2">
+            <span>👥</span> Player ({players.length})
           </h2>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-3 max-h-60 overflow-y-auto">
+          <div className="max-h-48 overflow-y-auto space-y-2">
             {players.map((player) => (
               <div
                 key={player.id}
@@ -226,16 +208,16 @@ export default function GameHostPage() {
                 {player.nama_siswa}
               </div>
             ))}
+            {players.length === 0 && (
+              <p className="text-gray-400 text-center py-4">Menunggu player join...</p>
+            )}
           </div>
-          {players.length === 0 && (
-            <p className="text-gray-400 text-center py-4">Menunggu player join...</p>
-          )}
         </div>
 
         <button
           onClick={startGame}
           disabled={players.length === 0}
-          className="qooz-btn qooz-btn-green text-2xl px-12 py-4 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="qooz-btn qooz-btn-green text-xl px-8 py-4 disabled:opacity-50 disabled:cursor-not-allowed w-full max-w-md"
         >
           ▶ Mulai Kuis
         </button>
@@ -253,163 +235,194 @@ export default function GameHostPage() {
     )
   }
 
-  // Playing Phase
+  // Playing Phase - Fixed layout with sticky bottom
   if (gamePhase === 'playing' && currentQuestion) {
+    const currentAnswers = answers.filter(a => a.question_id === currentQuestion.id)
     const answerCounts = [0, 0, 0, 0]
-    answers.forEach(a => {
-      if (a.jawaban_dipilih !== null && a.jawaban_dipilih >= 1 && a.jawaban_dipilih <= 4) {
-        answerCounts[a.jawaban_dipilih - 1]++
+    currentAnswers.forEach(a => {
+      const pilihan = Number(a.jawaban_dipilih)
+      if (pilihan >= 1 && pilihan <= 4) {
+        answerCounts[pilihan - 1]++
       }
     })
 
     return (
-      <div className="min-h-screen p-4 md:p-8">
-        <div className="max-w-6xl mx-auto">
-          {/* Header */}
-          <div className="flex justify-between items-center mb-6">
-            <div className="qooz-card py-2 px-4">
-              <span className="text-gray-500">PIN:</span>
-              <span className="font-bold text-purple-600 ml-2">{session?.pin}</span>
+      <div className="min-h-screen flex flex-col">
+        {/* Fixed Header */}
+        <div className="bg-white/10 backdrop-blur-sm p-3 md:p-4 sticky top-0 z-10">
+          <div className="max-w-6xl mx-auto flex justify-between items-center gap-2">
+            <div className="bg-white/20 backdrop-blur rounded-lg px-3 py-1 md:px-4 md:py-2">
+              <span className="text-white/80 text-sm">PIN:</span>
+              <span className="font-bold text-white ml-2">{session?.pin}</span>
             </div>
-            <div className="qooz-card py-2 px-4">
-              <span className="text-gray-500">Soal:</span>
-              <span className="font-bold text-gray-800 ml-2">
+            <div className="bg-white/20 backdrop-blur rounded-lg px-3 py-1 md:px-4 md:py-2">
+              <span className="text-white/80 text-sm">Soal:</span>
+              <span className="font-bold text-white ml-2">
                 {(session?.question_index ?? 0) + 1}/{questions.length}
               </span>
             </div>
-            <div className={`qooz-card py-2 px-6 ${timeLeft <= 5 ? 'bg-red-100 animate-pulse' : 'bg-purple-100'}`}>
-              <span className={`text-3xl font-black ${timeLeft <= 5 ? 'text-red-600' : 'text-purple-600'}`}>
+            <div className={`rounded-lg px-4 py-2 ${timeLeft <= 5 ? 'bg-red-500 animate-pulse' : 'bg-white/20 backdrop-blur'}`}>
+              <span className={`text-2xl md:text-3xl font-black ${timeLeft <= 5 ? 'text-white' : 'text-white'}`}>
                 {timeLeft}
               </span>
             </div>
           </div>
+        </div>
 
-          {/* Question */}
-          <div className="qooz-card mb-6">
-            <h1 className="host-question text-center">
-              {currentQuestion.teks_soal}
-            </h1>
-          </div>
+        {/* Scrollable Content */}
+        <div className="flex-1 p-4 md:p-6 overflow-auto" ref={contentRef}>
+          <div className="max-w-4xl mx-auto">
+            {/* Question */}
+            <div className="qooz-card mb-4 md:mb-6">
+              <h1 className="host-question text-center text-xl md:text-3xl lg:text-4xl">
+                {currentQuestion.teks_soal}
+              </h1>
+            </div>
 
-          {/* Options */}
-          <div className="grid md:grid-cols-2 gap-4 mb-6">
-            {[currentQuestion.opsi_1, currentQuestion.opsi_2, currentQuestion.opsi_3, currentQuestion.opsi_4].map((opt, idx) => (
-              <div key={idx} className="relative">
-                <div className={`host-option ${optionColors[idx]}`}>
-                  <span className="mr-4">{optionLabels[idx]}</span>
-                  {opt}
+            {/* Options Grid */}
+            <div className="grid grid-cols-2 gap-3 md:gap-4 mb-4">
+              {[currentQuestion.opsi_1, currentQuestion.opsi_2, currentQuestion.opsi_3, currentQuestion.opsi_4].map((opt, idx) => (
+                <div key={idx} className="relative">
+                  <div className={`host-option ${optionColors[idx]} text-base md:text-xl lg:text-2xl`}>
+                    <span className="mr-2 md:mr-3">{optionLabels[idx]}</span>
+                    <span className="truncate">{opt}</span>
+                  </div>
+                  <div className="absolute -top-2 -right-2 bg-white rounded-full shadow-lg px-2 py-1 font-bold text-gray-800 text-sm">
+                    {answerCounts[idx]}
+                  </div>
                 </div>
-                {/* Answer count badge */}
-                <div className="absolute -top-2 -right-2 bg-white rounded-full shadow-lg px-3 py-1 font-bold text-gray-800">
-                  {answerCounts[idx]}
-                </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
 
-          {/* Players answered */}
-          <div className="text-center text-white/80">
-            {answers.length} / {players.length} answered
+            {/* Progress */}
+            <div className="text-center text-white/80 text-sm md:text-base">
+              {currentAnswers.length} / {players.length} menjawab
+            </div>
+          </div>
+        </div>
+
+        {/* Fixed Bottom Button */}
+        <div className="p-4 bg-white/10 backdrop-blur-sm sticky bottom-0">
+          <div className="max-w-4xl mx-auto">
+            <button
+              onClick={endQuestion}
+              className="w-full qooz-btn qooz-btn-green text-lg py-4"
+            >
+              ✓ Akhiri & Hitung Skor
+            </button>
           </div>
         </div>
       </div>
     )
   }
 
-  // Result Phase
+  // Result Phase - Fixed layout
   if (gamePhase === 'result' && currentQuestion) {
-    const correctCount = answers.filter(a => 
-      a.question_id === currentQuestion.id && a.is_correct
-    ).length
+    const currentAnswers = answers.filter(a => a.question_id === currentQuestion.id)
+    const correctCount = currentAnswers.filter(a => a.is_correct).length
     
     const answerCounts = [0, 0, 0, 0]
-    answers.filter(a => a.question_id === currentQuestion.id).forEach(a => {
-      if (a.jawaban_dipilih !== null && a.jawaban_dipilih >= 1 && a.jawaban_dipilih <= 4) {
-        answerCounts[a.jawaban_dipilih - 1]++
+    currentAnswers.forEach(a => {
+      const pilihan = Number(a.jawaban_dipilih)
+      if (pilihan >= 1 && pilihan <= 4) {
+        answerCounts[pilihan - 1]++
       }
     })
 
+    const totalAnswered = currentAnswers.length
+
     return (
-      <div className="min-h-screen p-4 md:p-8">
-        <div className="max-w-4xl mx-auto">
-          {/* Correct Answer */}
-          <div className="qooz-card text-center mb-6 animate-bounce-in">
-            <h2 className="text-3xl font-bold text-gray-800 mb-2">Jawaban Benar</h2>
-            <div className={`host-option ${optionColors[currentQuestion.jawaban_benar - 1]} inline-block text-2xl`}>
-              {optionLabels[currentQuestion.jawaban_benar - 1]}. {['opsi_1', 'opsi_2', 'opsi_3', 'opsi_4'].map(k => currentQuestion[k as keyof typeof currentQuestion])[currentQuestion.jawaban_benar - 1]}
+      <div className="min-h-screen flex flex-col">
+        {/* Fixed Header */}
+        <div className="bg-white/10 backdrop-blur-sm p-3 md:p-4 sticky top-0 z-10">
+          <div className="max-w-4xl mx-auto flex justify-between items-center gap-2">
+            <div className="bg-white/20 backdrop-blur rounded-lg px-3 py-1 md:px-4 md:py-2">
+              <span className="text-white/80 text-sm">PIN:</span>
+              <span className="font-bold text-white ml-2">{session?.pin}</span>
             </div>
-            <p className="text-gray-500 mt-4">
-              {answers.filter(a => a.question_id === currentQuestion.id).length > 0 
-                ? `${correctCount} dari ${answers.filter(a => a.question_id === currentQuestion.id).length} benar`
-                : 'Belum ada yang menjawab'}
-            </p>
+            <div className="bg-white/20 backdrop-blur rounded-lg px-3 py-1 md:px-4 md:py-2">
+              <span className="text-white/80 text-sm">Soal:</span>
+              <span className="font-bold text-white ml-2">
+                {(session?.question_index ?? 0) + 1}/{questions.length}
+              </span>
+            </div>
           </div>
+        </div>
 
-          {/* Bar Chart */}
-          <div className="qooz-card mb-6">
-            <h3 className="text-xl font-bold text-gray-800 mb-4">Grafik Jawaban</h3>
-            <div className="space-y-3">
-              {optionLabels.map((label, idx) => {
-                const count = answerCounts[idx]
-                const total = answers.filter(a => a.question_id === currentQuestion.id).length
-                const percentage = total > 0 ? (count / total) * 100 : 0
-                const isCorrect = Number(idx + 1) === Number(currentQuestion.jawaban_benar)
+        {/* Scrollable Content */}
+        <div className="flex-1 p-4 md:p-6 overflow-auto">
+          <div className="max-w-2xl mx-auto space-y-4">
+            {/* Correct Answer */}
+            <div className="qooz-card text-center animate-bounce-in">
+              <h2 className="text-xl md:text-2xl font-bold text-gray-800 mb-3">Jawaban Benar</h2>
+              <div className={`host-option ${optionColors[currentQuestion.jawaban_benar - 1]} inline-block text-lg md:text-2xl`}>
+                {optionLabels[currentQuestion.jawaban_benar - 1]}. {['opsi_1', 'opsi_2', 'opsi_3', 'opsi_4'].map(k => currentQuestion[k as keyof typeof currentQuestion])[currentQuestion.jawaban_benar - 1]}
+              </div>
+              <p className="text-gray-500 mt-3 text-sm md:text-base">
+                {totalAnswered > 0 
+                  ? `${correctCount} dari ${totalAnswered} benar`
+                  : 'Belum ada yang menjawab'}
+              </p>
+            </div>
 
-                return (
-                  <div key={idx} className="flex items-center gap-3">
-                    <span className={`w-8 h-8 rounded flex items-center justify-center font-bold text-white ${optionColors[idx]}`}>
-                      {label}
-                    </span>
-                    <div className="flex-1 bg-gray-200 rounded-full h-6 overflow-hidden">
-                      <div
-                        className={`h-full ${isCorrect ? 'bg-green-500' : 'bg-gray-400'} transition-all duration-500`}
-                        style={{ width: `${percentage}%` }}
-                      />
+            {/* Bar Chart */}
+            <div className="qooz-card">
+              <h3 className="text-lg font-bold text-gray-800 mb-4">📊 Grafik Jawaban</h3>
+              <div className="space-y-3">
+                {optionLabels.map((label, idx) => {
+                  const count = answerCounts[idx]
+                  const percentage = totalAnswered > 0 ? (count / totalAnswered) * 100 : 0
+                  const isCorrect = Number(idx + 1) === Number(currentQuestion.jawaban_benar)
+
+                  return (
+                    <div key={idx} className="flex items-center gap-3">
+                      <span className={`w-8 h-8 rounded flex items-center justify-center font-bold text-white ${optionColors[idx]}`}>
+                        {label}
+                      </span>
+                      <div className="flex-1 bg-gray-200 rounded-full h-5 md:h-6 overflow-hidden">
+                        <div
+                          className={`h-full ${isCorrect ? 'bg-green-500' : 'bg-gray-400'} transition-all duration-500`}
+                          style={{ width: `${percentage}%` }}
+                        />
+                      </div>
+                      <span className="w-10 md:w-12 text-right font-bold text-gray-600">{count}</span>
                     </div>
-                    <span className="w-12 text-right font-bold text-gray-600">{count}</span>
+                  )
+                })}
+              </div>
+            </div>
+
+            {/* Leaderboard */}
+            <div className="qooz-card">
+              <h3 className="text-lg font-bold text-gray-800 mb-3">🏆 Peringkat</h3>
+              <div className="space-y-2">
+                {players.slice(0, 5).map((player, idx) => (
+                  <div key={player.id} className="flex items-center gap-3 p-2 md:p-3 bg-gray-50 rounded-xl">
+                    <span className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm ${
+                      idx === 0 ? 'bg-yellow-400 text-yellow-900' :
+                      idx === 1 ? 'bg-gray-300 text-gray-700' :
+                      idx === 2 ? 'bg-amber-600 text-white' :
+                      'bg-gray-200 text-gray-600'
+                    }`}>
+                      {idx + 1}
+                    </span>
+                    <span className="flex-1 font-semibold text-gray-800 truncate">{player.nama_siswa}</span>
+                    <span className="font-bold text-purple-600">{player.skor_total}</span>
                   </div>
-                )
-              })}
+                ))}
+              </div>
             </div>
           </div>
+        </div>
 
-          {/* Leaderboard */}
-          <div className="qooz-card mb-6">
-            <h3 className="text-xl font-bold text-gray-800 mb-4">Peringkat Sementara</h3>
-            <div className="space-y-2">
-              {players.slice(0, 5).map((player, idx) => (
-                <div key={player.id} className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl">
-                  <span className={`w-8 h-8 rounded-full flex items-center justify-center font-bold ${
-                    idx === 0 ? 'bg-yellow-400 text-yellow-900' :
-                    idx === 1 ? 'bg-gray-300 text-gray-700' :
-                    idx === 2 ? 'bg-amber-600 text-white' :
-                    'bg-gray-200 text-gray-600'
-                  }`}>
-                    {idx + 1}
-                  </span>
-                  <span className="flex-1 font-semibold text-gray-800">{player.nama_siswa}</span>
-                  <span className="font-bold text-purple-600">{player.skor_total}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Debug: Show game phase and states */}
-          <div className="qooz-card mb-4 text-left text-sm bg-yellow-100">
-            <p>gamePhase: <strong>{gamePhase}</strong></p>
-            <p>session.question_index: <strong>{session?.question_index}</strong></p>
-            <p>questions.length: <strong>{questions.length}</strong></p>
-            <p>currentQuestion?.id: <strong>{currentQuestion?.id}</strong></p>
-          </div>
-
-          {/* Next Button */}
-          <div className="text-center">
+        {/* Fixed Bottom Button */}
+        <div className="p-4 bg-white/10 backdrop-blur-sm sticky bottom-0">
+          <div className="max-w-2xl mx-auto">
             <button
               onClick={nextQuestion}
-              className="qooz-btn qooz-btn-primary text-xl px-12"
-              disabled={questions.length === 0}
+              className="w-full qooz-btn qooz-btn-primary text-lg py-4"
             >
-              {((session?.question_index ?? 0) + 1) >= questions.length ? 'Selesai' : 'Soal Berikutnya →'}
+              {((session?.question_index ?? 0) + 1) >= questions.length ? '🎉 Selesai' : 'Soal Berikutnya →'}
             </button>
           </div>
         </div>
@@ -423,44 +436,44 @@ export default function GameHostPage() {
 
     return (
       <div className="min-h-screen flex flex-col items-center justify-center p-4">
-        <h1 className="qooz-title text-5xl md:text-7xl mb-8">Pemenang!</h1>
+        <h1 className="qooz-title text-4xl md:text-6xl mb-6 md:mb-8">🎉 Pemenang!</h1>
         
-        <div className="flex items-end gap-4 md:gap-8 mb-12">
+        <div className="flex items-end gap-3 md:gap-6 mb-8 md:mb-12">
           {/* 2nd Place */}
           {top3[1] && (
             <div className="text-center animate-slide-up" style={{ animationDelay: '0.2s' }}>
-              <div className="w-20 h-20 md:w-32 md:h-32 bg-gray-300 rounded-full flex items-center justify-center mx-auto mb-4">
-                <span className="text-3xl md:text-5xl">🥈</span>
+              <div className="w-16 h-16 md:w-24 md:h-24 bg-gray-300 rounded-full flex items-center justify-center mx-auto mb-2 md:mb-3">
+                <span className="text-2xl md:text-4xl">🥈</span>
               </div>
-              <p className="font-bold text-gray-800 text-lg md:text-xl">{top3[1].nama_siswa}</p>
-              <p className="text-purple-600 font-bold">{top3[1].skor_total}</p>
+              <p className="font-bold text-gray-800 text-sm md:text-lg">{top3[1].nama_siswa}</p>
+              <p className="text-purple-600 font-bold text-sm md:text-base">{top3[1].skor_total}</p>
             </div>
           )}
 
           {/* 1st Place */}
           {top3[0] && (
             <div className="text-center animate-bounce-in" style={{ animationDelay: '0.1s' }}>
-              <div className="w-24 h-24 md:w-40 md:h-40 bg-yellow-400 rounded-full flex items-center justify-center mx-auto mb-4 shadow-2xl">
-                <span className="text-4xl md:text-6xl">👑</span>
+              <div className="w-20 h-20 md:w-32 md:h-32 bg-yellow-400 rounded-full flex items-center justify-center mx-auto mb-2 md:mb-3 shadow-2xl">
+                <span className="text-3xl md:text-5xl">👑</span>
               </div>
-              <p className="font-bold text-gray-800 text-xl md:text-2xl">{top3[0].nama_siswa}</p>
-              <p className="text-purple-600 font-bold text-lg md:text-xl">{top3[0].skor_total}</p>
+              <p className="font-bold text-gray-800 text-base md:text-xl">{top3[0].nama_siswa}</p>
+              <p className="text-purple-600 font-bold text-base md:text-xl">{top3[0].skor_total}</p>
             </div>
           )}
 
           {/* 3rd Place */}
           {top3[2] && (
             <div className="text-center animate-slide-up" style={{ animationDelay: '0.4s' }}>
-              <div className="w-20 h-20 md:w-32 md:h-32 bg-amber-600 rounded-full flex items-center justify-center mx-auto mb-4">
-                <span className="text-3xl md:text-5xl">🥉</span>
+              <div className="w-16 h-16 md:w-24 md:h-24 bg-amber-600 rounded-full flex items-center justify-center mx-auto mb-2 md:mb-3">
+                <span className="text-2xl md:text-4xl">🥉</span>
               </div>
-              <p className="font-bold text-gray-800 text-lg md:text-xl">{top3[2].nama_siswa}</p>
-              <p className="text-purple-600 font-bold">{top3[2].skor_total}</p>
+              <p className="font-bold text-gray-800 text-sm md:text-lg">{top3[2].nama_siswa}</p>
+              <p className="text-purple-600 font-bold text-sm md:text-base">{top3[2].skor_total}</p>
             </div>
           )}
         </div>
 
-        <Link href="/host" className="qooz-btn qooz-btn-primary">
+        <Link href="/host" className="qooz-btn qooz-btn-primary px-8 py-3">
           Kembali ke Dashboard
         </Link>
       </div>

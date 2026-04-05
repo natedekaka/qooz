@@ -34,7 +34,6 @@ export default function PlayerGamePage() {
         setSession(response.session)
         setMyScore(response.player.skor_total)
         
-        // Check game status
         if (response.session.status === 'finished') {
           setGamePhase('finished')
         } else if (response.question) {
@@ -51,7 +50,6 @@ export default function PlayerGamePage() {
           setGamePhase('waiting')
         }
         
-        // Get rank
         const scoreResponse = await api.player.score(playerId)
         if (scoreResponse.player) {
           setRank(scoreResponse.rank)
@@ -75,7 +73,6 @@ export default function PlayerGamePage() {
     fetchInitialData(playerId)
   }, [])
 
-  // Polling for updates
   useEffect(() => {
     const playerId = localStorage.getItem('qooz_player_id')
     if (!playerId) return
@@ -83,13 +80,6 @@ export default function PlayerGamePage() {
     const pollState = async () => {
       try {
         const response = await api.player.state(playerId)
-        
-        if (response.error) {
-          console.error('Poll error:', response.error)
-          return
-        }
-        
-        console.log('Player poll - gamePhase:', gamePhase, 'question:', response.question?.id)
         
         if (response.session.status === 'finished') {
           setGamePhase('finished')
@@ -102,32 +92,24 @@ export default function PlayerGamePage() {
           return
         }
         
-        // Check if new question started - only if not already answering
         if (response.question && response.question.id !== currentQuestion?.id && gamePhase !== 'answering' && gamePhase !== 'correct') {
-          console.log('New question detected:', response.question.id, 'current:', currentQuestion?.id, 'waktu_detik:', response.question.waktu_detik)
           setCurrentQuestion(response.question)
           setGamePhase('countdown')
           setHasAnswered(false)
           setSelectedAnswer(null)
           setTimeLeft(response.question.waktu_detik || 20)
           
-          // Start answering after countdown
           setTimeout(() => {
-            console.log('Student: switching to answering phase')
             setGamePhase('answering')
             questionStartRef.current = Date.now()
           }, 3000)
         } else if (!response.question && gamePhase === 'answering') {
-          // Question was cleared, but player was answering - stay in waiting
-          console.log('Question cleared but was answering, staying in waiting')
         }
         
-        // Update score
         if (response.player) {
           setMyScore(response.player.skor_total)
         }
         
-        // Get rank
         const scoreResponse = await api.player.score(playerId)
         if (scoreResponse.player) {
           setRank(scoreResponse.rank)
@@ -139,13 +121,10 @@ export default function PlayerGamePage() {
     }
 
     const pollInterval = parseInt(process.env.NEXT_PUBLIC_POLL_INTERVAL || '2000')
-    
-    // Poll every 2 seconds (configurable via env)
     const interval = setInterval(pollState, pollInterval)
     return () => clearInterval(interval)
   }, [currentQuestion, gamePhase])
 
-  // Timer for answering
   useEffect(() => {
     if (gamePhase !== 'answering' || timeLeft <= 0) return
 
@@ -170,22 +149,17 @@ export default function PlayerGamePage() {
     setHasAnswered(true)
 
     try {
-      console.log('Submitting answer:', { playerId: player.id, questionId: currentQuestion.id, sessionId: session.id, answer, responseTime })
-      const result = await api.player.answer(
+      await api.player.answer(
         player.id,
         currentQuestion.id,
         session.id,
         String(answer),
         String(responseTime)
       )
-      console.log('Answer API result:', result)
-
-      // Show result briefly
+      
       setGamePhase('correct')
-      console.log('Answer submitted, showing correct phase')
       
       setTimeout(() => {
-        console.log('Transitioning to waiting phase')
         setGamePhase('waiting')
       }, 2000)
     } catch (err) {
@@ -213,20 +187,18 @@ export default function PlayerGamePage() {
   if (gamePhase === 'waiting') {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center p-4">
-        <div className="text-center">
-          <div className="w-24 h-24 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-6 animate-pulse">
-            <span className="text-5xl">⏳</span>
-          </div>
-          <h1 className="text-2xl font-bold text-gray-800 mb-2">
-            Menunggu soal...
-          </h1>
-          <p className="text-gray-500 mb-6">
-            Game PIN: <span className="font-bold text-purple-600">{pin}</span>
-          </p>
-          <div className="qooz-card inline-block">
-            <p className="text-gray-500 text-sm">Skor kamu</p>
-            <p className="text-3xl font-black text-purple-600">{myScore}</p>
-          </div>
+        <div className="w-24 h-24 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-6 animate-pulse">
+          <span className="text-5xl">⏳</span>
+        </div>
+        <h1 className="text-2xl font-bold text-gray-800 mb-2 text-center">
+          Menunggu soal...
+        </h1>
+        <p className="text-gray-500 mb-6 text-center">
+          Game PIN: <span className="font-bold text-purple-600">{pin}</span>
+        </p>
+        <div className="qooz-card text-center">
+          <p className="text-gray-500 text-sm">Skor kamu</p>
+          <p className="text-3xl font-black text-purple-600">{myScore}</p>
         </div>
       </div>
     )
@@ -243,38 +215,65 @@ export default function PlayerGamePage() {
     )
   }
 
-  // Answering Phase
+  // Answering Phase - Full screen mobile-first
   if (gamePhase === 'answering' && currentQuestion) {
-    return (
-      <div className="min-h-screen flex flex-col">
-        {/* Timer bar */}
-        <div className="h-2 bg-gray-200">
-          <div
-            className="h-full bg-red-500 transition-all duration-1000"
-            style={{ width: `${(timeLeft / currentQuestion.waktu_detik) * 100}%` }}
-          />
-        </div>
+    const maxTime = currentQuestion.waktu_detik || 20
+    const progressPercent = (timeLeft / maxTime) * 100
 
-        <div className="flex-1 p-2">
-          <div className="grid grid-cols-2 gap-2 h-full">
-            {optionColors.map((color, idx) => (
-              <button
-                key={idx}
-                onClick={() => submitAnswer(idx + 1)}
-                disabled={hasAnswered}
-                className={`${color} player-option rounded-2xl disabled:opacity-50 ${
-                  hasAnswered ? 'cursor-not-allowed' : 'active:scale-95'
-                }`}
-              >
-                {hasAnswered && selectedAnswer === idx + 1 ? '✓' : ''}
-              </button>
-            ))}
+    return (
+      <div className="min-h-screen flex flex-col bg-gradient-to-b from-gray-900 to-gray-800">
+        {/* Top bar */}
+        <div className="p-3 md:p-4">
+          <div className="flex justify-between items-center text-white/80 text-sm md:text-base">
+            <span>PIN: <span className="font-bold text-white">{pin}</span></span>
+            <span className="font-bold text-xl md:text-2xl text-white">{timeLeft}s</span>
+          </div>
+          {/* Progress bar */}
+          <div className="mt-2 h-2 bg-white/20 rounded-full overflow-hidden">
+            <div 
+              className={`h-full transition-all duration-1000 ${timeLeft <= 5 ? 'bg-red-500' : 'bg-purple-500'}`}
+              style={{ width: `${progressPercent}%` }}
+            />
           </div>
         </div>
 
+        {/* Question */}
+        <div className="px-3 md:px-6 py-2">
+          <p className="text-white text-lg md:text-2xl font-bold text-center leading-tight">
+            {currentQuestion.teks_soal}
+          </p>
+        </div>
+
+        {/* Answer buttons - 2x2 grid */}
+        <div className="flex-1 p-2 md:p-4 grid grid-cols-2 gap-2 md:gap-3">
+          {optionColors.map((color, idx) => (
+            <button
+              key={idx}
+              onClick={() => submitAnswer(idx + 1)}
+              disabled={hasAnswered}
+              className={`
+                ${color} 
+                rounded-2xl md:rounded-3xl 
+                flex items-center justify-center
+                font-black text-3xl md:text-5xl lg:text-6xl text-white
+                transition-all duration-150 active:scale-95
+                shadow-2xl
+                ${hasAnswered ? 'opacity-60 cursor-not-allowed' : 'hover:brightness-110'}
+              `}
+            >
+              {hasAnswered && selectedAnswer === idx + 1 ? (
+                <span className="text-4xl md:text-6xl">✓</span>
+              ) : (
+                <span className="mb-2 md:mb-4">{optionLabels[idx]}</span>
+              )}
+            </button>
+          ))}
+        </div>
+
+        {/* Bottom status */}
         {hasAnswered && (
-          <div className="p-4 text-center">
-            <p className="text-white font-bold">Jawaban terkirim!</p>
+          <div className="p-4 bg-green-500 text-white text-center font-bold text-lg">
+            ✓ Jawaban terkirim!
           </div>
         )}
       </div>
@@ -283,21 +282,20 @@ export default function PlayerGamePage() {
 
   // Correct Answer Feedback
   if (gamePhase === 'correct') {
-    // Use loose equality or convert to number to handle string vs number comparison
     const isCorrect = Number(selectedAnswer) === Number(currentQuestion?.jawaban_benar)
     
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center p-4">
+      <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-gradient-to-b from-gray-900 to-gray-800">
         <div className={`text-center ${isCorrect ? 'animate-bounce-in' : 'animate-slide-up'}`}>
-          <div className={`w-32 h-32 rounded-full flex items-center justify-center mx-auto mb-6 ${
+          <div className={`w-32 h-32 md:w-40 md:h-40 rounded-full flex items-center justify-center mx-auto mb-6 ${
             isCorrect ? 'bg-green-500' : 'bg-red-500'
           }`}>
-            <span className="text-6xl">{isCorrect ? '✓' : '✗'}</span>
+            <span className="text-6xl md:text-7xl">{isCorrect ? '✓' : '✗'}</span>
           </div>
-          <h1 className={`text-4xl font-black ${isCorrect ? 'text-green-500' : 'text-red-500'}`}>
+          <h1 className={`text-4xl md:text-5xl font-black ${isCorrect ? 'text-green-500' : 'text-red-500'}`}>
             {isCorrect ? 'BENAR!' : 'SALAH!'}
           </h1>
-          <p className="text-white mt-4">Menunggu soal berikutnya...</p>
+          <p className="text-white/80 mt-4 text-lg">Menunggu soal berikutnya...</p>
         </div>
       </div>
     )
@@ -308,22 +306,22 @@ export default function PlayerGamePage() {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center p-4">
         <div className="text-center">
-          <h1 className="qooz-title text-4xl mb-8">Game Selesai!</h1>
+          <h1 className="qooz-title text-4xl mb-6 md:mb-8">🎉 Game Selesai!</h1>
           
-          <div className="qooz-card mb-6">
-            <p className="text-gray-500 mb-2">Skor Akhir</p>
-            <p className="text-5xl font-black text-purple-600">{myScore}</p>
+          <div className="qooz-card mb-4">
+            <p className="text-gray-500 mb-1 text-sm">Skor Akhir</p>
+            <p className="text-5xl md:text-6xl font-black text-purple-600">{myScore}</p>
           </div>
 
           <div className="qooz-card">
-            <p className="text-gray-500 mb-2">Peringkat</p>
-            <p className="text-3xl font-bold text-gray-800">
-              #{rank} dari {totalPlayers}
+            <p className="text-gray-500 mb-1 text-sm">Peringkat</p>
+            <p className="text-2xl md:text-3xl font-bold text-gray-800">
+              #{rank} <span className="text-gray-400">dari {totalPlayers}</span>
             </p>
           </div>
         </div>
 
-        <Link href="/play" className="qooz-btn qooz-btn-primary mt-8">
+        <Link href="/play" className="qooz-btn qooz-btn-primary mt-8 px-8 py-3">
           Main Lagi
         </Link>
       </div>
@@ -332,3 +330,5 @@ export default function PlayerGamePage() {
 
   return null
 }
+
+const optionLabels = ['A', 'B', 'C', 'D']

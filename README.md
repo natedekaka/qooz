@@ -1,36 +1,78 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Qooz - Quiz App
 
-## Getting Started
+Aplikasi kuis interaktif terinspirasi dari Quizizz.
 
-First, run the development server:
+## Requirements
+
+- Node.js 20+
+- Podman atau Docker
+- npm atau yarn
+
+## Quick Start
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+# Jalankan semua service
+./install.sh start
+
+# Atau langkah demi langkah:
+./install.sh install   # Install dependencies + start API
+./install.sh web       # Start web dev server
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Akses
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+| Service | URL |
+|---------|-----|
+| Web App | http://localhost:3000 |
+| API | http://localhost:8090/qooz/api |
+| phpMyAdmin | http://localhost:8091 |
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Akses dari HP
 
-## Learn More
+Pastikan HP dan laptop satu jaringan WiFi yang sama, lalu buka:
+```
+http://192.168.x.x:3000
+```
+(Ganti dengan IP laptop kamu)
 
-To learn more about Next.js, take a look at the following resources:
+Cek IP laptop: `./install.sh status`
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Commands
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```bash
+./install.sh start    # Start everything
+./install.sh install  # Install deps + start API
+./install.sh api      # Start API & DB only
+./install.sh web      # Start web server only
+./install.sh stop     # Stop all services
+./install.sh status   # Show status
+```
 
-## Deploy on Vercel
+## Development
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```bash
+# Manual start
+npm install
+npm run dev
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+# Akses web API
+# Edit .env.local:
+NEXT_PUBLIC_API_URL=http://localhost:8090/qooz/api
+```
+
+## Troubleshooting
+
+**HP tidak bisa akses:**
+```bash
+# Cek firewall
+sudo firewall-cmd --list-ports
+# Atau disable sementara:
+sudo ufw disable
+```
+
+**Container tidak jalan:**
+```bash
+podman compose down
+podman compose up -d
+podman logs qooz-api
+```

@@ -3,4 +3,4 @@ RewriteEngine On
 RewriteBase /qooz/
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
-RewriteRule ^api/(.*)$ qooz/api/$1 [L]
+RewriteRule ^(.*)$ index.php?_route=$1 [L,QSA]

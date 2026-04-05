@@ -1,7 +1,8 @@
 version: '3.8'
 
 services:
-  qooz-app:
+  # Development mode - hot reload aktif, akses HP mudah
+  qooz-web:
     image: node:20-alpine
     container_name: qooz-web
     ports:
@@ -11,11 +12,10 @@ services:
       - .:/app
       - /app/node_modules
     environment:
-      - NEXT_PUBLIC_API_URL=http://host.containers.internal:8090/qooz/api
+      - NEXT_PUBLIC_API_URL=http://localhost:8090/qooz/api
       - NEXT_PUBLIC_POLL_INTERVAL=2000
-    extra_hosts:
-      - "host.containers.internal:host-gateway"
-    command: sh -c "npm run build && npm run start"
+      - NEXT_PUBLIC_GAME_TIMEOUT=30000
+    command: sh -c "npm run dev -- --hostname 0.0.0.0"
     depends_on:
       - qooz-api
     networks:
