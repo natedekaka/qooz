@@ -131,7 +131,7 @@ body {
 }
 
 .host-option {
-  @apply text-base md:text-xl lg:text-2xl font-bold text-white p-3 md:p-4 rounded-xl;
+  @apply text-base md:text-xl lg:text-2xl font-bold text-white p-3 md:p-4 rounded-xl min-h-[80px] md:min-h-[100px];
 }
 
 /* Player screen styles */
