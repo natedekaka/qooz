@@ -332,6 +332,9 @@ export default function GameHostPage() {
     })
 
     const totalAnswered = currentAnswers.length
+    const sortedPlayers = [...players].sort((a, b) => b.skor_total - a.skor_total)
+    const top3 = sortedPlayers.slice(0, 3)
+    const maxScore = Math.max(...players.map(p => p.skor_total), 1)
 
     return (
       <div className="min-h-screen flex flex-col">
@@ -373,7 +376,7 @@ export default function GameHostPage() {
               </p>
             </div>
 
-            {/* Bar Chart */}
+            {/* Bar Chart Jawaban */}
             <div className="qooz-card">
               <h3 className="text-lg font-bold text-gray-800 mb-4">📊 Grafik Jawaban</h3>
               <div className="space-y-3">
@@ -400,24 +403,75 @@ export default function GameHostPage() {
               </div>
             </div>
 
-            {/* Leaderboard */}
+            {/* Top 3 Winners */}
             <div className="qooz-card">
-              <h3 className="text-lg font-bold text-gray-800 mb-3">🏆 Peringkat</h3>
-              <div className="space-y-2">
-                {players.slice(0, 5).map((player, idx) => (
-                  <div key={player.id} className="flex items-center gap-3 p-2 md:p-3 bg-gray-50 rounded-xl">
-                    <span className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm ${
-                      idx === 0 ? 'bg-yellow-400 text-yellow-900' :
-                      idx === 1 ? 'bg-gray-300 text-gray-700' :
-                      idx === 2 ? 'bg-amber-600 text-white' :
-                      'bg-gray-200 text-gray-600'
-                    }`}>
-                      {idx + 1}
-                    </span>
-                    <span className="flex-1 font-semibold text-gray-800 truncate">{player.nama_siswa}</span>
-                    <span className="font-bold text-purple-600">{player.skor_total}</span>
+              <h3 className="text-lg font-bold text-gray-800 mb-3">🏆 Top 3 Peringkat</h3>
+              <div className="flex items-end justify-center gap-2 md:gap-4">
+                {top3[1] && (
+                  <div className="text-center">
+                    <div className="w-10 h-10 md:w-14 md:h-14 bg-gray-300 rounded-full flex items-center justify-center mx-auto mb-1">
+                      <span className="text-lg md:text-2xl">🥈</span>
+                    </div>
+                    <p className="font-semibold text-xs md:text-sm text-gray-700 truncate max-w-[60px]">{top3[1].nama_siswa}</p>
+                    <p className="font-bold text-purple-600 text-xs md:text-base">{top3[1].skor_total}</p>
                   </div>
-                ))}
+                )}
+                {top3[0] && (
+                  <div className="text-center">
+                    <div className="w-12 h-12 md:w-18 md:h-18 bg-yellow-400 rounded-full flex items-center justify-center mx-auto mb-1 shadow-lg ring-2 ring-yellow-300">
+                      <span className="text-2xl md:text-3xl">👑</span>
+                    </div>
+                    <p className="font-bold text-sm md:text-base text-gray-800 truncate max-w-[80px]">{top3[0].nama_siswa}</p>
+                    <p className="font-black text-purple-600 text-base md:text-xl">{top3[0].skor_total}</p>
+                  </div>
+                )}
+                {top3[2] && (
+                  <div className="text-center">
+                    <div className="w-10 h-10 md:w-14 md:h-14 bg-amber-600 rounded-full flex items-center justify-center mx-auto mb-1">
+                      <span className="text-lg md:text-2xl">🥉</span>
+                    </div>
+                    <p className="font-semibold text-xs md:text-sm text-gray-700 truncate max-w-[60px]">{top3[2].nama_siswa}</p>
+                    <p className="font-bold text-purple-600 text-xs md:text-base">{top3[2].skor_total}</p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Full Score Graph */}
+            <div className="qooz-card">
+              <h3 className="text-lg font-bold text-gray-800 mb-3">📈 Skor Semua Player</h3>
+              <div className="space-y-2 max-h-48 overflow-y-auto">
+                {sortedPlayers.map((player, idx) => {
+                  const percentage = (player.skor_total / maxScore) * 100
+                  const isTop3 = idx < 3
+                  
+                  return (
+                    <div key={player.id} className="flex items-center gap-2">
+                      <span className={`w-5 h-5 rounded-full flex items-center justify-center font-bold text-xs ${
+                        idx === 0 ? 'bg-yellow-400 text-yellow-900' :
+                        idx === 1 ? 'bg-gray-300 text-gray-700' :
+                        idx === 2 ? 'bg-amber-600 text-white' :
+                        'bg-gray-200 text-gray-600'
+                      }`}>
+                        {idx + 1}
+                      </span>
+                      <span className="w-16 md:w-24 text-xs font-medium text-gray-600 truncate">
+                        {player.nama_siswa}
+                      </span>
+                      <div className="flex-1 bg-gray-200 rounded-full h-3 md:h-4 overflow-hidden">
+                        <div
+                          className={`h-full rounded-full transition-all duration-300 ${
+                            isTop3 ? 'bg-gradient-to-r from-purple-500 to-purple-600' : 'bg-gray-400'
+                          }`}
+                          style={{ width: `${Math.max(percentage, 5)}%` }}
+                        />
+                      </div>
+                      <span className={`w-8 text-right font-bold text-xs ${isTop3 ? 'text-purple-600' : 'text-gray-500'}`}>
+                        {player.skor_total}
+                      </span>
+                    </div>
+                  )
+                })}
               </div>
             </div>
           </div>
@@ -438,50 +492,108 @@ export default function GameHostPage() {
     )
   }
 
-  // Finished Phase - Podium
+  // Finished Phase - Podium with Full Leaderboard
   if (gamePhase === 'finished') {
-    const top3 = players.slice(0, 3)
+    const sortedPlayers = [...players].sort((a, b) => b.skor_total - a.skor_total)
+    const top3 = sortedPlayers.slice(0, 3)
+    const maxScore = Math.max(...players.map(p => p.skor_total), 1)
 
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center p-4">
-        <h1 className="qooz-title text-4xl md:text-6xl mb-6 md:mb-8">🎉 Pemenang!</h1>
+      <div className="min-h-screen flex flex-col items-center p-4">
+        <h1 className="qooz-title text-3xl md:text-5xl mb-4 md:mb-6">🎉 Game Selesai!</h1>
         
-        <div className="flex items-end gap-3 md:gap-6 mb-8 md:mb-12">
-          {/* 2nd Place */}
+        {/* Podium */}
+        <div className="flex items-end gap-2 md:gap-4 mb-6 md:mb-8">
           {top3[1] && (
             <div className="text-center animate-slide-up" style={{ animationDelay: '0.2s' }}>
-              <div className="w-16 h-16 md:w-24 md:h-24 bg-gray-300 rounded-full flex items-center justify-center mx-auto mb-2 md:mb-3">
-                <span className="text-2xl md:text-4xl">🥈</span>
+              <div className="w-12 h-12 md:w-20 md:h-20 bg-gradient-to-br from-gray-300 to-gray-400 rounded-full flex items-center justify-center mx-auto mb-1 md:mb-2 shadow-lg">
+                <span className="text-xl md:text-3xl">🥈</span>
               </div>
-              <p className="font-bold text-gray-800 text-sm md:text-lg">{top3[1].nama_siswa}</p>
-              <p className="text-purple-600 font-bold text-sm md:text-base">{top3[1].skor_total}</p>
+              <p className="font-bold text-gray-800 text-xs md:text-base">{top3[1].nama_siswa}</p>
+              <p className="text-purple-600 font-bold text-xs md:text-lg">{top3[1].skor_total} pts</p>
             </div>
           )}
 
-          {/* 1st Place */}
           {top3[0] && (
             <div className="text-center animate-bounce-in" style={{ animationDelay: '0.1s' }}>
-              <div className="w-20 h-20 md:w-32 md:h-32 bg-yellow-400 rounded-full flex items-center justify-center mx-auto mb-2 md:mb-3 shadow-2xl">
-                <span className="text-3xl md:text-5xl">👑</span>
+              <div className="w-16 h-16 md:w-28 md:h-28 bg-gradient-to-br from-yellow-300 to-yellow-500 rounded-full flex items-center justify-center mx-auto mb-1 md:mb-2 shadow-2xl ring-4 ring-yellow-300">
+                <span className="text-2xl md:text-5xl">👑</span>
               </div>
-              <p className="font-bold text-gray-800 text-base md:text-xl">{top3[0].nama_siswa}</p>
-              <p className="text-purple-600 font-bold text-base md:text-xl">{top3[0].skor_total}</p>
+              <p className="font-bold text-gray-800 text-sm md:text-xl">{top3[0].nama_siswa}</p>
+              <p className="text-purple-600 font-black text-sm md:text-2xl">{top3[0].skor_total} pts</p>
             </div>
           )}
 
-          {/* 3rd Place */}
           {top3[2] && (
             <div className="text-center animate-slide-up" style={{ animationDelay: '0.4s' }}>
-              <div className="w-16 h-16 md:w-24 md:h-24 bg-amber-600 rounded-full flex items-center justify-center mx-auto mb-2 md:mb-3">
-                <span className="text-2xl md:text-4xl">🥉</span>
+              <div className="w-12 h-12 md:w-20 md:h-20 bg-gradient-to-br from-amber-500 to-amber-700 rounded-full flex items-center justify-center mx-auto mb-1 md:mb-2 shadow-lg">
+                <span className="text-xl md:text-3xl">🥉</span>
               </div>
-              <p className="font-bold text-gray-800 text-sm md:text-lg">{top3[2].nama_siswa}</p>
-              <p className="text-purple-600 font-bold text-sm md:text-base">{top3[2].skor_total}</p>
+              <p className="font-bold text-gray-800 text-xs md:text-base">{top3[2].nama_siswa}</p>
+              <p className="text-purple-600 font-bold text-xs md:text-lg">{top3[2].skor_total} pts</p>
             </div>
           )}
         </div>
 
-        <Link href="/host" className="qooz-btn qooz-btn-primary px-8 py-3">
+        {/* Full Leaderboard with Graph */}
+        <div className="qooz-card w-full max-w-lg">
+          <h3 className="text-lg font-bold text-gray-800 mb-4">📊 Skor Semua Player</h3>
+          
+          {/* Bar Chart */}
+          <div className="space-y-2 mb-4">
+            {sortedPlayers.map((player, idx) => {
+              const percentage = (player.skor_total / maxScore) * 100
+              const isTop3 = idx < 3
+              
+              return (
+                <div key={player.id} className="flex items-center gap-2">
+                  <span className={`w-6 h-6 rounded-full flex items-center justify-center font-bold text-xs ${
+                    idx === 0 ? 'bg-yellow-400 text-yellow-900' :
+                    idx === 1 ? 'bg-gray-300 text-gray-700' :
+                    idx === 2 ? 'bg-amber-600 text-white' :
+                    'bg-purple-100 text-purple-700'
+                  }`}>
+                    {idx + 1}
+                  </span>
+                  <span className="w-20 md:w-28 text-xs md:text-sm font-medium text-gray-700 truncate">
+                    {player.nama_siswa}
+                  </span>
+                  <div className="flex-1 bg-gray-200 rounded-full h-4 md:h-6 overflow-hidden">
+                    <div
+                      className={`h-full rounded-full transition-all duration-500 ${
+                        isTop3 ? 'bg-gradient-to-r from-purple-500 to-purple-600' : 'bg-gray-400'
+                      }`}
+                      style={{ width: `${Math.max(percentage, 5)}%` }}
+                    />
+                  </div>
+                  <span className={`w-12 text-right font-bold text-xs md:text-sm ${isTop3 ? 'text-purple-600' : 'text-gray-600'}`}>
+                    {player.skor_total}
+                  </span>
+                </div>
+              )
+            })}
+          </div>
+
+          {/* Stats */}
+          <div className="grid grid-cols-3 gap-2 pt-3 border-t">
+            <div className="text-center">
+              <p className="text-xs text-gray-500">Total Player</p>
+              <p className="font-bold text-purple-600">{players.length}</p>
+            </div>
+            <div className="text-center">
+              <p className="text-xs text-gray-500">Skor Tertinggi</p>
+              <p className="font-bold text-purple-600">{maxScore}</p>
+            </div>
+            <div className="text-center">
+              <p className="text-xs text-gray-500">Rata-rata</p>
+              <p className="font-bold text-purple-600">
+                {players.length > 0 ? Math.round(players.reduce((acc, p) => acc + p.skor_total, 0) / players.length) : 0}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <Link href="/host" className="qooz-btn qooz-btn-primary px-8 py-3 mt-6">
           Kembali ke Dashboard
         </Link>
       </div>
