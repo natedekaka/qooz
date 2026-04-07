@@ -281,15 +281,15 @@ export default function GameHostPage() {
               </div>
             </div>
 
-            {/* Options Grid - scrollable */}
-            <div className="grid grid-cols-2 gap-3 md:gap-4 mb-4 max-h-[35vh] overflow-y-auto">
+            {/* Options Grid */}
+            <div className="grid grid-cols-2 gap-3 md:gap-4 mb-4">
               {[currentQuestion.opsi_1, currentQuestion.opsi_2, currentQuestion.opsi_3, currentQuestion.opsi_4].map((opt, idx) => (
-                <div key={idx} className="relative">
-                  <div className={`host-option ${optionColors[idx]} ${opt.length > 80 ? 'text-xs md:text-sm lg:text-base h-28 md:h-32 lg:h-36' : opt.length > 40 ? 'text-sm md:text-lg lg:text-xl h-24 md:h-28 lg:h-32' : 'text-base md:text-xl lg:text-2xl h-24 md:h-28 lg:h-32'} flex items-start justify-start`}>
+                <div key={idx} className="relative overflow-visible">
+                  <div className={`host-option ${optionColors[idx]} ${opt.length > 80 ? 'text-xs md:text-sm lg:text-base' : opt.length > 40 ? 'text-sm md:text-lg lg:text-xl' : 'text-base md:text-xl lg:text-2xl'} flex items-start justify-start break-words`}>
                     <span className="mr-2 md:mr-3 shrink-0">{optionLabels[idx]}.</span>
-                    <span className="flex-1">{opt}</span>
+                    <span className="flex-1 break-words">{opt}</span>
                   </div>
-                  <div className="absolute -top-2 -right-2 bg-white rounded-full shadow-lg px-2 py-1 font-bold text-gray-800 text-sm">
+                  <div className="absolute -top-1 -right-1 md:-top-2 md:-right-2 bg-white rounded-full shadow-lg px-1.5 py-0.5 md:px-2 md:py-1 font-bold text-gray-800 text-xs md:text-sm min-w-[20px] md:min-w-[24px] text-center">
                     {answerCounts[idx]}
                   </div>
                 </div>
