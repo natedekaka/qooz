@@ -48,10 +48,11 @@ npm install
 
 ### Langkah 2: Jalankan Backend (API & Database)
 
-```bash
-# Jalankan container (API + Database + phpMyAdmin)
-podman-compose up -d
-```
+| Service | URL |
+|---------|-----|
+| 🌐 **Web App** | http://localhost:3000 |
+| 🔌 **API** | http://localhost:8080/qooz/api |
+| 🗄️ **Database** | http://localhost:8081 (phpMyAdmin) |
 
 ### Langkah 3: Jalankan Frontend
 
