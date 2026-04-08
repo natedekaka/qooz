@@ -19,6 +19,10 @@ echo -e "${BLUE}
 ╚═══════════════════════════════════════╝
 ${NC}"
 
+# Get script directory and change to project directory
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$SCRIPT_DIR"
+
 # Get IP address
 get_ip() {
     ip addr show 2>/dev/null | grep "inet " | grep -v "127.0.0.1" | awk '{print $2}' | cut -d'/' -f1 | head -1
@@ -63,8 +67,8 @@ start_api() {
     $CONTAINER_CMD compose up -d qooz-db qooz-api qooz-pma
     
     echo -e "${GREEN}✓ API and Database started${NC}"
-    echo -e "${BLUE}  - API: http://localhost:8090/qooz/api${NC}"
-    echo -e "${BLUE}  - phpMyAdmin: http://localhost:8091${NC}"
+    echo -e "${BLUE}  - API: http://localhost:8080/qooz/api${NC}"
+    echo -e "${BLUE}  - phpMyAdmin: http://localhost:8081${NC}"
 }
 
 # Clean up old processes
@@ -92,7 +96,7 @@ start_dev() {
     cleanup
     
     # Update env with correct IP
-    sed -i "s|NEXT_PUBLIC_API_URL=.*|NEXT_PUBLIC_API_URL=http://$IP:8090/qooz/api|" .env.local
+    sed -i "s|NEXT_PUBLIC_API_URL=.*|NEXT_PUBLIC_API_URL=http://$IP:8080/qooz/api|" .env.local
     
     echo -e "${GREEN}✓ Development server starting...${NC}"
     echo -e "\n${BLUE}═══════════════════════════════════════════════${NC}"
@@ -125,8 +129,8 @@ status() {
     fi
     echo -e "\nAccess URLs:"
     echo -e "  - Web:       http://$IP:3000"
-    echo -e "  - API:       http://$IP:8090/qooz/api"
-    echo -e "  - phpMyAdmin: http://$IP:8091"
+    echo -e "  - API:       http://$IP:8080/qooz/api"
+    echo -e "  - phpMyAdmin: http://$IP:8081"
 }
 
 # Main menu
