@@ -79,13 +79,12 @@ docker ps
 
 Jika berhasil, akan ada 4 container:
 - `qooz-web` - Frontend Next.js (port 3000)
-- `qooz-api` - Backend PHP (port 8090)
-- `qooz-db` - Database MariaDB (port 3306)
-- `qooz-pma` - phpMyAdmin (port 8091)
+- `qooz-api` - Backend PHP (port 8080)
+- `qooz-pma` - phpMyAdmin (port 8081)
 
 ### 1.5 Setup Database via phpMyAdmin
 
-1. Buka browser, akses: **http://localhost:8091**
+1. Buka browser, akses: **http://localhost:8081**
 2. Login:
    - Username: `root`
    - Password: `qooz_root_pass` (sesuai di config)
@@ -116,7 +115,7 @@ nano src/qooz/.env.local
 
 Ubah sesuai IP server:
 ```env
-NEXT_PUBLIC_API_URL=http://192.168.1.100:8090/qooz/api
+NEXT_PUBLIC_API_URL=http://192.168.1.100:8080/qooz/api
 NEXT_PUBLIC_POLL_INTERVAL=2000
 NEXT_PUBLIC_GAME_TIMEOUT=30000
 ```
@@ -125,8 +124,8 @@ NEXT_PUBLIC_GAME_TIMEOUT=30000
 ```bash
 # Jika menggunakan ufw
 sudo ufw allow 3000/tcp
-sudo ufw allow 8090/tcp
-sudo ufw allow 8091/tcp
+sudo ufw allow 8080/tcp
+sudo ufw allow 8081/tcp
 sudo ufw reload
 
 # Cek status
@@ -424,7 +423,7 @@ pm2 logs qooz
 
 2. Cek port sudah benar:
    ```bash
-   ss -tlnp | grep -E '3000|8090|3306'
+   ss -tlnp | grep -E '3000|8080|3306'
    ```
 
 ## Tidak Bisa Akses dari HP
@@ -437,7 +436,7 @@ pm2 logs qooz
 2. Buka firewall:
    ```bash
    sudo ufw allow 3000/tcp
-   sudo ufw allow 8090/tcp
+   sudo ufw allow 8080/tcp
    sudo ufw reload
    ```
 
@@ -460,7 +459,7 @@ sudo kill -9 <PID>
 ## Buat User Guru Baru
 
 Via phpMyAdmin:
-1. Buka **http://server:8091**
+1. Buka **http://server:8081**
 2. Login: root / qooz_root_pass
 3. Klik database `qooz_db`
 4. Klik tabel `users`
