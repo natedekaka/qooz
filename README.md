@@ -53,8 +53,8 @@ npm install
 | Service | URL |
 |---------|-----|
 | 🌐 **Web App** | http://localhost:3000 |
-| 🔌 **API** | http://localhost:8090/qooz/api |
-| 🗄️ **Database** | http://localhost:8091 (phpMyAdmin) |
+| 🔌 **API** | http://localhost:8080/qooz/api |
+| 🗄️ **Database** | http://localhost:8081 (phpMyAdmin) |
 
 ### Akses dari HP
 
