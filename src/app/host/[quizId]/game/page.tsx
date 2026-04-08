@@ -492,6 +492,43 @@ export default function GameHostPage() {
     )
   }
 
+  const downloadScores = () => {
+    if (!session || players.length === 0) return
+
+    const sortedPlayers = [...players].sort((a, b) => b.skor_total - a.skor_total)
+    
+    const csvContent = [
+      `QOOZ - Hasil Kuis`,
+      `Quiz: ${quiz?.judul || '-'}`,
+      `PIN: ${session.pin}`,
+      `Tanggal: ${new Date().toLocaleDateString('id-ID', { 
+        weekday: 'long', 
+        year: 'numeric', 
+        month: 'long', 
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      })}`,
+      '',
+      'Peringkat,Nama,Skor',
+      ...sortedPlayers.map((p, i) => `${i + 1},"${p.nama_siswa}",${p.skor_total}`),
+      '',
+      `Total Player: ${players.length}`,
+      `Skor Tertinggi: ${Math.max(...players.map(p => p.skor_total))}`,
+      `Rata-rata: ${Math.round(players.reduce((acc, p) => acc + p.skor_total, 0) / players.length)}`
+    ].join('\n')
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `qooz-skor-${session.pin}-${new Date().toISOString().split('T')[0]}.csv`
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    URL.revokeObjectURL(url)
+  }
+
   // Finished Phase - Podium with Full Leaderboard
   if (gamePhase === 'finished') {
     const sortedPlayers = [...players].sort((a, b) => b.skor_total - a.skor_total)
@@ -596,6 +633,13 @@ export default function GameHostPage() {
         <Link href="/host" className="qooz-btn qooz-btn-primary px-8 py-3 mt-6">
           Kembali ke Dashboard
         </Link>
+
+        <button
+          onClick={downloadScores}
+          className="qooz-btn qooz-btn-green px-8 py-3 mt-4"
+        >
+          📥 Download Skor
+        </button>
       </div>
     )
   }

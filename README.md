@@ -22,19 +22,20 @@ Qooz adalah platform kuis real-time yang memungkinkan guru membuat dan mengelola
 | ⚡ **Fast Response** | Skor berdasarkan kecepatan jawaban |
 | 🎨 **Modern UI** | Tampilan menarik dan responsif |
 | 🔒 **Anti-Duplicate** | Nama player tidak bisa sama |
-| 📊 **Live Chart** | Grafik jawaban tampil langsung |
+| 📊 **Live Chart** | Grafik jawaban dan skor tampil langsung |
+| 🏆 **Leaderboard** | Podium top 3 dan ranking semua player |
 | 🔧 **Easy Install** | Install dalam hitungan menit |
 
 ---
 
-## 🚀 Quick Start
+## 🚀 Cara Install & Jalankan
 
-### Prerequisites
+### Prasyarat
 - Node.js 20+
 - Podman atau Docker
 - npm atau yarn
 
-### Installation
+### Langkah 1: Clone & Install
 
 ```bash
 # Clone repository
@@ -43,12 +44,9 @@ cd qooz
 
 # Install dependencies
 npm install
-
-# Start semua service
-./install.sh start
 ```
 
-### Akses Aplikasi
+### Langkah 2: Jalankan Backend (API & Database)
 
 | Service | URL |
 |---------|-----|
@@ -56,20 +54,40 @@ npm install
 | 🔌 **API** | http://localhost:8080/qooz/api |
 | 🗄️ **Database** | http://localhost:8081 (phpMyAdmin) |
 
-### Akses dari HP
+### Langkah 3: Jalankan Frontend
 
-Buka browser di HP, ketik IP laptop + port:
+```bash
+# Jalankan Next.js development server
+npm run dev
 ```
-http://[IP-LAPTOP]:3000
+
+Terminal akan menampilkan IP lokal:
 ```
-
-Cek IP laptop dengan perintah: `hostname -I` atau `ip addr`
-
-> 💡 Pastikan HP dan laptop terhubung ke jaringan WiFi yang sama!
+========================================
+  📱 Access from HP: http://192.168.x.x:3000
+========================================
+```
 
 ---
 
-## 📖 Cara Penggunaan
+## 🌐 Akses Aplikasi
+
+| Service | URL | Keterangan |
+|---------|-----|------------|
+| 🌐 **Frontend** | http://localhost:3000 | Aplikasi utama (laptop) |
+| 🌐 **Frontend (HP)** | http://[IP-LAPTOP]:3000 | Akses dari HP |
+| 🔌 **API** | http://localhost:8080/qooz/api | Backend PHP |
+| 🗄️ **phpMyAdmin** | http://localhost:8081 | Manage database |
+
+### Cek IP Laptop
+
+```bash
+hostname -I
+```
+
+---
+
+## 👥 Cara Penggunaan
 
 ### Untuk Guru (Host)
 
@@ -80,7 +98,8 @@ Cek IP laptop dengan perintah: `hostname -I` atau `ip addr`
 5. Klik **"Mulai Kuis"**
 6. Berikan **Game PIN** ke siswa
 7. Klik **"Akhiri & Hitung Skor"** setiap selesai soal
-8. Lihat hasilnya dan continue ke soal berikutnya!
+8. Lihat hasil dengan **grafik jawaban** dan **ranking**
+9. Lanjutkan ke soal berikutnya!
 
 ### Untuk Siswa (Player)
 
@@ -94,7 +113,7 @@ Cek IP laptop dengan perintah: `hostname -I` atau `ip addr`
 
 ---
 
-## 🎯 Sistem Skor
+## 🏆 Sistem Skor & Ranking
 
 | Jawaban | Poin | Penjelasan |
 |---------|------|------------|
@@ -102,19 +121,71 @@ Cek IP laptop dengan perintah: `hostname -I` atau `ip addr`
 | ✅ Benar (Lambat) | ~500 | Jawaban benar tapi lambat |
 | ❌ Salah | 0 | Jawaban salah |
 
-> 💡 Semakin cepat menjawab dengan benar, semakin tinggi skor!
+### Fitur Ranking
+- 🏆 **Podium Top 3** dengan animasi (juara 1, 2, 3)
+- 📊 **Grafik Skor** semua player dengan bar chart
+- 📈 **Stats**: total player, skor tertinggi, rata-rata
 
 ---
 
-## 🛠️ Commands
+## 🔧 Perintah (Commands)
 
 ```bash
-./install.sh start    # Start semua service
-./install.sh install  # Install dependencies + start API
-./install.sh api      # Start API & DB saja
-./install.sh web      # Start web server saja
-./install.sh stop     # Stop semua service
-./install.sh status   # Cek status
+# Container commands
+podman-compose up -d       # Start semua container
+podman-compose down       # Stop semua container
+podman-compose restart    # Restart container
+podman logs qooz-api      # Lihat log API
+podman logs qooz-db       # Lihat log database
+
+# Frontend commands
+npm run dev               # Start development server
+npm run build             # Build production
+npm run lint              # Run linter
+```
+
+---
+
+## 🛠️ Troubleshooting
+
+### HP tidak bisa akses?
+
+```bash
+# 1. Cek IP laptop
+hostname -I
+
+# 2. Allow firewall (Linux)
+sudo ufw allow 3000/tcp
+sudo ufw allow 8080/tcp
+
+# 3. Atau disable firewall sementara
+sudo ufw disable
+```
+
+### Container tidak jalan?
+
+```bash
+# Rebuild dan start ulang
+podman-compose down
+podman-compose up -d --build
+
+# Cek log
+podman logs qooz-api
+podman logs qooz-db
+```
+
+### Port sudah terpakai?
+
+```bash
+# Cek proses di port
+lsof -i:3000
+lsof -i:8080
+
+# Kill proses
+kill -9 <PID>
+
+# Atau restart container
+podman-compose restart
 ```
 
 ---
@@ -123,44 +194,13 @@ Cek IP laptop dengan perintah: `hostname -I` atau `ip addr`
 
 <p align="left">
   <img src="https://img.shields.io/badge/Next.js-16-black?style=flat-square&logo=next.js" alt="Next.js">
-  <img src="https://img.shields.io/badge/React-18-61DAFB?style=flat-square&logo=react" alt="React">
+  <img src="https://img.shields.io/badge/React-19-61DAFB?style=flat-square&logo=react" alt="React">
   <img src="https://img.shields.io/badge/TypeScript-5-3178C6?style=flat-square&logo=typescript" alt="TypeScript">
-  <img src="https://img.shields.io/badge/Tailwind-3-06B6D4?style=flat-square&logo=tailwindcss" alt="Tailwind">
+  <img src="https://img.shields.io/badge/Tailwind-4-06B6D4?style=flat-square&logo=tailwindcss" alt="Tailwind">
   <img src="https://img.shields.io/badge/PHP-8.2-777BB4?style=flat-square&logo=php" alt="PHP">
   <img src="https://img.shields.io/badge/MariaDB-10.11-003545?style=flat-square&logo=mariadb" alt="MariaDB">
   <img src="https://img.shields.io/badge/Docker-Podman-2496ED?style=flat-square&logo=docker" alt="Docker">
-  <img src="https://img.shields.io/badge/Hyprland-Wayland-3D5AFE?style=flat-square" alt="Wayland">
 </p>
-
----
-
-## 🔧 Troubleshooting
-
-### HP tidak bisa akses?
-```bash
-# Cek IP laptop
-hostname -I
-
-# Disable firewall sementara (Linux)
-sudo ufw disable
-
-# Atau allow port:
-sudo ufw allow 3000/tcp
-sudo ufw allow 8090/tcp
-```
-
-### Container tidak jalan?
-```bash
-podman compose down
-podman compose up -d --build
-podman logs qooz-api
-```
-
-### Port sudah terpakai?
-```bash
-pkill -f "next dev"
-podman compose restart
-```
 
 ---
 
@@ -190,17 +230,13 @@ Kontribusi sangat diterima! Silakan:
 
 ## 📜 License
 
-Project ini dilisensikan di bawah MIT License - lihat file [LICENSE](LICENSE) untuk detail.
+Project ini dilisensikan di bawah MIT License.
 
 ---
 
 ## 👨‍💻 Dibuat dengan ❤️ oleh
 
 **Natedekaka** - 2026
-
-<p align="center">
-  <img src="https://img.shields.io/badge/Powered%20by-Omarchy-8B5CF6?style=for-the-badge" alt="Omarchy">
-</p>
 
 ---
 

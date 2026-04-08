@@ -14,7 +14,7 @@ class Database {
     private static $instance = null;
     private $connection;
 
-    private $host = 'qooz-db';
+    private $host = 'localhost';
     private $user = 'root';
     private $pass = 'qooz_root_pass';
     private $db = 'qooz_db';
