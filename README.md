@@ -31,20 +31,29 @@ Qooz adalah platform kuis real-time yang memungkinkan guru membuat dan mengelola
 ## 🚀 Cara Install & Jalankan
 
 ### Prasyarat
-- Node.js 20+
 - Podman atau Docker
-- npm atau yarn
+- Tidak perlu install Node.js terpisah (sudah ada di container)
 
-### Langkah 1: Clone & Install
+### Langkah 1: Clone & Jalankan
 
 ```bash
 # Clone repository
 git clone https://github.com/natedekaka/qooz.git
 cd qooz
 
-# Install dependencies
-npm install
+# Jalankan semua service (DB + API + Web)
+podman-compose up -d
 ```
+
+Selesai! Semua akan otomatis berjalan:
+
+| Service | URL |
+|---------|-----|
+| 🌐 **Web App** | http://localhost:3000 |
+| 🔌 **API** | http://localhost:8080/qooz/api |
+| 🗄️ **Database** | http://localhost:8081 (phpMyAdmin) |
+
+Terminal akan menampilkan IP lokal untuk akses dari HP:
 
 ### Langkah 2: Jalankan Backend (API & Database)
 
@@ -79,10 +88,28 @@ Terminal akan menampilkan IP lokal:
 | 🔌 **API** | http://localhost:8080/qooz/api | Backend PHP |
 | 🗄️ **phpMyAdmin** | http://localhost:8081 | Manage database |
 
-### Cek IP Laptop
+### Cek IP Laptop (untuk akses dari HP)
 
 ```bash
+# Cara 1
 hostname -I
+
+# Cara 2
+ip addr show | grep "inet " | grep -v "127.0.0.1"
+```
+
+### Update IP Jika Jaringan Berubah
+
+Jika IP laptop berubah, perlu update konfigurasi:
+
+```bash
+# Edit .env.local dengan IP baru
+nano .env.local
+
+# Atau edit docker-compose.yml baris environment NEXT_PUBLIC_API_URL
+
+# Restart container
+podman-compose down && podman-compose up -d
 ```
 
 ---
@@ -131,17 +158,22 @@ hostname -I
 ## 🔧 Perintah (Commands)
 
 ```bash
-# Container commands
-podman-compose up -d       # Start semua container
-podman-compose down       # Stop semua container
-podman-compose restart    # Restart container
-podman logs qooz-api      # Lihat log API
-podman logs qooz-db       # Lihat log database
+# Start semua container (DB + API + Web app)
+podman-compose up -d
 
-# Frontend commands
-npm run dev               # Start development server
-npm run build             # Build production
-npm run lint              # Run linter
+# Stop semua container
+podman-compose down
+
+# Restart container
+podman-compose restart
+
+# Rebuild jika ada perubahan
+podman-compose up -d --build
+
+# Lihat log
+podman logs qooz-web     # Log web app
+podman logs qooz-api     # Log API
+podman logs qooz-db      # Log database
 ```
 
 ---
@@ -208,8 +240,6 @@ podman-compose restart
 
 | Software | Versi Minimal |
 |----------|--------------|
-| Node.js | 20+ |
-| npm | 10+ |
 | Podman/Docker | Latest |
 | RAM | 2GB |
 | Storage | 1GB |
