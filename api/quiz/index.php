@@ -88,6 +88,70 @@ if ($method === 'POST') {
         response(['success' => true]);
     }
     
+    if ($action === 'duplicate') {
+        $quizId = $_POST['quiz_id'] ?? '';
+        
+        if (!$quizId) {
+            response(['error' => 'Kuis tidak ditemukan'], 404);
+        }
+        
+        $result = conn()->query("SELECT * FROM quizzes WHERE id = '$quizId'");
+        $quiz = $result->fetch_assoc();
+        
+        if (!$quiz) {
+            response(['error' => 'Kuis tidak ditemukan'], 404);
+        }
+        
+        $newId = generateUUID();
+        $newJudul = $quiz['judul'] . ' (Salinan)';
+        
+        $stmt = conn()->prepare("INSERT INTO quizzes (id, user_id, judul, deskripsi, jumlah_soal) VALUES (?, ?, ?, ?, ?)");
+        $stmt->bind_param('ssssi', $newId, $userId, $newJudul, $quiz['deskripsi'], $quiz['jumlah_soal']);
+        
+        if ($stmt->execute()) {
+            conn()->query("INSERT INTO questions (id, quiz_id, nomor_soal, teks_soal, opsi_1, opsi_2, opsi_3, opsi_4, jawaban_benar, waktu_detik) 
+                          SELECT CONCAT(UUID(), '-', ROW_NUMBER() OVER()), '$newId', nomor_soal, teks_soal, opsi_1, opsi_2, opsi_3, opsi_4, jawaban_benar, waktu_detik 
+                          FROM questions WHERE quiz_id = '$quizId'");
+            
+            response(['success' => true, 'quiz' => ['id' => $newId, 'judul' => $newJudul]]);
+        } else {
+            response(['error' => 'Gagal menduplikasi kuis'], 500);
+        }
+    }
+    
+    if ($action === 'convert_to_template') {
+        $quizId = $_POST['quiz_id'] ?? '';
+        $kategori = $_POST['kategori'] ?? '';
+        $isPublic = $_POST['is_public'] ?? 'false';
+        
+        if (!$quizId) {
+            response(['error' => 'Kuis tidak ditemukan'], 404);
+        }
+        
+        $result = conn()->query("SELECT * FROM quizzes WHERE id = '$quizId'");
+        $quiz = $result->fetch_assoc();
+        
+        if (!$quiz) {
+            response(['error' => 'Kuis tidak ditemukan'], 404);
+        }
+        
+        $templateId = generateUUID();
+        $isPublicBool = $isPublic === 'true' ? TRUE : FALSE;
+        
+        $stmt = conn()->prepare("INSERT INTO quiz_templates (id, user_id, judul, deskripsi, kategori, is_public, jumlah_soal) VALUES (?, ?, ?, ?, ?, ?, ?)");
+        $stmt->bind_param('sssssbi', $templateId, $userId, $quiz['judul'], $quiz['deskripsi'], $kategori, $isPublicBool, $quiz['jumlah_soal']);
+        
+        if ($stmt->execute()) {
+            conn()->query("INSERT INTO template_questions (id, template_id, nomor_soal, teks_soal, opsi_1, opsi_2, opsi_3, opsi_4, jawaban_benar, waktu_detik) 
+                          SELECT CONCAT(UUID(), '-', ROW_NUMBER() OVER()), '$templateId', nomor_soal, teks_soal, opsi_1, opsi_2, opsi_3, opsi_4, jawaban_benar, waktu_detik 
+                          FROM questions WHERE quiz_id = '$quizId'");
+            
+            response(['success' => true, 'template' => ['id' => $templateId]]);
+        } else {
+            response(['error' => 'Gagal mengkonversi ke template'], 500);
+        }
+    }
+    
     if ($action === 'add_question') {
         $quizId = $_POST['quiz_id'] ?? '';
         $soal = $_POST['soal'] ?? '';

@@ -28,10 +28,88 @@ CREATE TABLE IF NOT EXISTS quizzes (
     judul VARCHAR(255) NOT NULL,
     deskripsi TEXT,
     jumlah_soal INT DEFAULT 0,
+    is_template BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
     INDEX idx_user_id (user_id)
+);
+
+-- =====================================================
+-- QUIZ TEMPLATES TABLE (Template Kuis Siap Pakai)
+-- =====================================================
+CREATE TABLE IF NOT EXISTS quiz_templates (
+    id VARCHAR(36) PRIMARY KEY,
+    user_id VARCHAR(36) NOT NULL,
+    judul VARCHAR(255) NOT NULL,
+    deskripsi TEXT,
+    kategori VARCHAR(100),
+    jumlah_soal INT DEFAULT 0,
+    is_public BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    INDEX idx_user_id (user_id),
+    INDEX idx_kategori (kategori)
+);
+
+-- =====================================================
+-- TEMPLATE QUESTIONS TABLE
+-- =====================================================
+CREATE TABLE IF NOT EXISTS template_questions (
+    id VARCHAR(36) PRIMARY KEY,
+    template_id VARCHAR(36) NOT NULL,
+    nomor_soal INT NOT NULL,
+    teks_soal TEXT NOT NULL,
+    opsi_1 VARCHAR(255) NOT NULL,
+    opsi_2 VARCHAR(255) NOT NULL,
+    opsi_3 VARCHAR(255) NOT NULL,
+    opsi_4 VARCHAR(255) NOT NULL,
+    jawaban_benar INT NOT NULL CHECK (jawaban_benar BETWEEN 1 AND 4),
+    waktu_detik INT NOT NULL DEFAULT 20,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (template_id) REFERENCES quiz_templates(id) ON DELETE CASCADE,
+    INDEX idx_template_id (template_id)
+);
+
+-- =====================================================
+-- SCHEDULED QUIZZES TABLE (Jadwal Kuis)
+-- =====================================================
+CREATE TABLE IF NOT EXISTS scheduled_quizzes (
+    id VARCHAR(36) PRIMARY KEY,
+    quiz_id VARCHAR(36) NOT NULL,
+    user_id VARCHAR(36) NOT NULL,
+    scheduled_at TIMESTAMP NOT NULL,
+    started_at TIMESTAMP NULL,
+    ended_at TIMESTAMP NULL,
+    status VARCHAR(20) DEFAULT 'pending' CHECK (status IN ('pending', 'started', 'finished', 'cancelled')),
+    max_players INT DEFAULT 50,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (quiz_id) REFERENCES quizzes(id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    INDEX idx_user_id (user_id),
+    INDEX idx_scheduled_at (scheduled_at),
+    INDEX idx_status (status)
+);
+
+-- =====================================================
+-- ATTENDANCE TABLE (Rekap Kehadiran)
+-- =====================================================
+CREATE TABLE IF NOT EXISTS attendance (
+    id VARCHAR(36) PRIMARY KEY,
+    session_id VARCHAR(36),
+    scheduled_quiz_id VARCHAR(36),
+    player_id VARCHAR(36),
+    nama_siswa VARCHAR(100),
+    hadir BOOLEAN DEFAULT FALSE,
+    skor INT DEFAULT 0,
+    ranked_position INT,
+    attendance_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (session_id) REFERENCES game_sessions(id) ON DELETE SET NULL,
+    FOREIGN KEY (scheduled_quiz_id) REFERENCES scheduled_quizzes(id) ON DELETE SET NULL,
+    FOREIGN KEY (player_id) REFERENCES players(id) ON DELETE SET NULL,
+    INDEX idx_session_id (session_id),
+    INDEX idx_scheduled_quiz_id (scheduled_quiz_id)
 );
 
 -- =====================================================
