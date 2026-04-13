@@ -20,11 +20,12 @@ Qooz adalah platform kuis real-time yang memungkinkan guru membuat dan mengelola
 | 🎮 **Real-Time** | Siswa menjawab dan skor langsung tampil |
 | 📱 **Multi-Device** | Host di laptop, player di HP |
 | ⚡ **Fast Response** | Skor berdasarkan kecepatan jawaban |
+| 📝 **Import Soal** | Import soal dari file JSON/CSV |
+| 📅 **Jadwal Kuis** | Jadwalkan kuis dengan waktu tertentu |
+| 📊 **Rekap Kehadiran** | Catat kehadiran dan skor siswa |
+| 🔄 **Duplikasi Kuis** | Salin kuis yang sudah ada |
 | 🎨 **Modern UI** | Tampilan menarik dan responsif |
-| 🔒 **Anti-Duplicate** | Nama player tidak bisa sama |
-| 📊 **Live Chart** | Grafik jawaban dan skor tampil langsung |
 | 🏆 **Leaderboard** | Podium top 3 dan ranking semua player |
-| 🔧 **Easy Install** | Install dalam hitungan menit |
 
 ---
 
@@ -34,7 +35,7 @@ Qooz adalah platform kuis real-time yang memungkinkan guru membuat dan mengelola
 - Podman atau Docker
 - Tidak perlu install Node.js terpisah (sudah ada di container)
 
-### Langkah 1: Clone & Jalankan
+### Jalankan Aplikasi
 
 ```bash
 # Clone repository
@@ -53,30 +54,6 @@ Selesai! Semua akan otomatis berjalan:
 | 🔌 **API** | http://localhost:8080/qooz/api |
 | 🗄️ **Database** | http://localhost:8081 (phpMyAdmin) |
 
-Terminal akan menampilkan IP lokal untuk akses dari HP:
-
-### Langkah 2: Jalankan Backend (API & Database)
-
-| Service | URL |
-|---------|-----|
-| 🌐 **Web App** | http://localhost:3000 |
-| 🔌 **API** | http://localhost:8080/qooz/api |
-| 🗄️ **Database** | http://localhost:8081 (phpMyAdmin) |
-
-### Langkah 3: Jalankan Frontend
-
-```bash
-# Jalankan Next.js development server
-npm run dev
-```
-
-Terminal akan menampilkan IP lokal:
-```
-========================================
-  📱 Access from HP: http://192.168.x.x:3000
-========================================
-```
-
 ---
 
 ## 🌐 Akses Aplikasi
@@ -91,52 +68,53 @@ Terminal akan menampilkan IP lokal:
 ### Cek IP Laptop (untuk akses dari HP)
 
 ```bash
-# Cara 1
-hostname -I
-
-# Cara 2
 ip addr show | grep "inet " | grep -v "127.0.0.1"
-```
-
-### Update IP Jika Jaringan Berubah
-
-Jika IP laptop berubah, perlu update konfigurasi:
-
-```bash
-# Edit .env.local dengan IP baru
-nano .env.local
-
-# Atau edit docker-compose.yml baris environment NEXT_PUBLIC_API_URL
-
-# Restart container
-podman-compose down && podman-compose up -d
 ```
 
 ---
 
-## 👥 Cara Penggunaan
+## 📖 Menu Aplikasi
 
 ### Untuk Guru (Host)
 
-1. Buka **http://localhost:3000/host**
-2. Login atau daftar akun
-3. Klik **"+ Buat Kuis Baru"**
-4. Tambahkan pertanyaan (soal pilihan ganda)
-5. Klik **"Mulai Kuis"**
-6. Berikan **Game PIN** ke siswa
-7. Klik **"Akhiri & Hitung Skor"** setiap selesai soal
-8. Lihat hasil dengan **grafik jawaban** dan **ranking**
-9. Lanjutkan ke soal berikutnya!
+| Menu | URL | Deskripsi |
+|------|-----|-----------|
+| **Kuis** | /host | Buat & kelola kuis |
+| **Import** | /import | Import soal dari JSON/CSV |
+| **Jadwal** | /schedule | Jadwalkan kuis |
+| **Kehadiran** | /attendance | Rekap kehadiran siswa |
 
 ### Untuk Siswa (Player)
 
-1. Buka browser di HP: **http://192.168.x.x:3000**
+1. Buka **http://[IP-LAPTOP]:3000** di HP
 2. Pilih **"Tampilan Siswa"**
 3. Masukkan **Game PIN** dari guru
-4. Masukkan nama kamu
-5. Klik **"Gabung"**
-6. Tunggu guru memulai kuis
-7. Jawab pertanyaan dengan cepat untuk dapat skor tinggi!
+4. Masukkan nama dan gabung
+
+---
+
+## 📥 Import Soal
+
+### Format JSON
+```json
+[
+  {
+    "teks_soal": "Apa ibukota Indonesia?",
+    "opsi_1": "Jakarta",
+    "opsi_2": "Bandung",
+    "opsi_3": "Surabaya",
+    "opsi_4": "Medan",
+    "jawaban_benar": 1,
+    "waktu_detik": 20
+  }
+]
+```
+
+### Format CSV
+```
+teks_soal,opsi_1,opsi_2,opsi_3,opsi_4,jawaban_benar,waktu_detik
+"Apa ibukota Indonesia?","Jakarta","Bandung","Surabaya","Medan",1,20
+```
 
 ---
 
@@ -148,17 +126,12 @@ podman-compose down && podman-compose up -d
 | ✅ Benar (Lambat) | ~500 | Jawaban benar tapi lambat |
 | ❌ Salah | 0 | Jawaban salah |
 
-### Fitur Ranking
-- 🏆 **Podium Top 3** dengan animasi (juara 1, 2, 3)
-- 📊 **Grafik Skor** semua player dengan bar chart
-- 📈 **Stats**: total player, skor tertinggi, rata-rata
-
 ---
 
 ## 🔧 Perintah (Commands)
 
 ```bash
-# Start semua container (DB + API + Web app)
+# Start semua container
 podman-compose up -d
 
 # Stop semua container
@@ -171,9 +144,9 @@ podman-compose restart
 podman-compose up -d --build
 
 # Lihat log
-podman logs qooz-web     # Log web app
-podman logs qooz-api     # Log API
-podman logs qooz-db      # Log database
+podman logs qooz-web
+podman logs qooz-api
+podman logs qooz-db
 ```
 
 ---
@@ -183,41 +156,19 @@ podman logs qooz-db      # Log database
 ### HP tidak bisa akses?
 
 ```bash
-# 1. Cek IP laptop
-hostname -I
+# Cek IP laptop
+ip addr show | grep "inet " | grep -v "127.0.0.1"
 
-# 2. Allow firewall (Linux)
+# Allow firewall (Linux)
 sudo ufw allow 3000/tcp
 sudo ufw allow 8080/tcp
-
-# 3. Atau disable firewall sementara
-sudo ufw disable
 ```
 
 ### Container tidak jalan?
 
 ```bash
-# Rebuild dan start ulang
 podman-compose down
 podman-compose up -d --build
-
-# Cek log
-podman logs qooz-api
-podman logs qooz-db
-```
-
-### Port sudah terpakai?
-
-```bash
-# Cek proses di port
-lsof -i:3000
-lsof -i:8080
-
-# Kill proses
-kill -9 <PID>
-
-# Atau restart container
-podman-compose restart
 ```
 
 ---
@@ -231,7 +182,7 @@ podman-compose restart
   <img src="https://img.shields.io/badge/Tailwind-4-06B6D4?style=flat-square&logo=tailwindcss" alt="Tailwind">
   <img src="https://img.shields.io/badge/PHP-8.2-777BB4?style=flat-square&logo=php" alt="PHP">
   <img src="https://img.shields.io/badge/MariaDB-10.11-003545?style=flat-square&logo=mariadb" alt="MariaDB">
-  <img src="https://img.shields.io/badge/Docker-Podman-2496ED?style=flat-square&logo=docker" alt="Docker">
+  <img src="https://img.shields.io/badge/Podman-2496ED?style=flat-square&logo=podman" alt="Podman">
 </p>
 
 ---
@@ -242,34 +193,9 @@ podman-compose restart
 |----------|--------------|
 | Podman/Docker | Latest |
 | RAM | 2GB |
-| Storage | 1GB |
-
----
-
-## 🤝 Kontribusi
-
-Kontribusi sangat diterima! Silakan:
-
-1. Fork repository ini
-2. Buat branch baru (`git checkout -b fitur-baru`)
-3. Commit perubahan (`git commit -m 'Menambah fitur baru'`)
-4. Push ke branch (`git push origin fitur-baru`)
-5. Buat Pull Request
 
 ---
 
 ## 📜 License
 
-Project ini dilisensikan di bawah MIT License.
-
----
-
-## 👨‍💻 Dibuat dengan ❤️ oleh
-
-**Natedekaka** - 2026
-
----
-
-<p align="center">
-  <strong>⭐ Jika Qooz bermanfaat, jangan lupa kasih star di GitHub!</strong>
-</p>
+MIT License - **Natedekaka** - 2026
