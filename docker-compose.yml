@@ -3,7 +3,9 @@ version: '3.8'
 services:
   # Development mode - hot reload aktif, akses HP mudah
   qooz-web:
-    image: node:20-alpine
+    build:
+      context: .
+      dockerfile: Dockerfile.web
     container_name: qooz-web
     ports:
       - "3000:3000"
@@ -12,7 +14,7 @@ services:
       - .:/app
       - /app/node_modules
     environment:
-      - NEXT_PUBLIC_API_URL=http://10.89.5.3:80/qooz/api
+      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://192.168.18.126:8080/qooz/api}
       - NEXT_PUBLIC_POLL_INTERVAL=2000
       - NEXT_PUBLIC_GAME_TIMEOUT=30000
     command: sh -c "npm run dev -- --hostname 0.0.0.0"
