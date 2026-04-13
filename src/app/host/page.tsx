@@ -115,8 +115,8 @@ export default function HostPage() {
             <p className="text-white/80 mt-1">Dashboard Guru</p>
           </div>
           <div className="flex gap-2">
-            <Link href="/template" className="px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg text-white">
-              Template
+            <Link href="/import" className="px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg text-white">
+              Import
             </Link>
             <Link href="/schedule" className="px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg text-white">
               Jadwal
