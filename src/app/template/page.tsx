@@ -211,7 +211,18 @@ export default function TemplatesPage() {
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Kategori</label>
-                <input type="text" value={newTemplate.kategori} onChange={(e) => setNewTemplate({...newTemplate, kategori: e.target.value})} className="qooz-input" placeholder="Matematika, IPA, dll" />
+                <select value={newTemplate.kategori} onChange={(e) => setNewTemplate({...newTemplate, kategori: e.target.value})} className="qooz-input">
+                  <option value="">Pilih kategori...</option>
+                  <option value="Matematika">Matematika</option>
+                  <option value="IPA">IPA</option>
+                  <option value="IPS">IPS</option>
+                  <option value="Bahasa Indonesia">Bahasa Indonesia</option>
+                  <option value="Bahasa Inggris">Bahasa Inggris</option>
+                  <option value="Informatika">Informatika</option>
+                  <option value="PKn">PKn</option>
+                  <option value="Agama">Agama</option>
+                  <option value="Lainnya">Lainnya</option>
+                </select>
               </div>
               <div className="flex items-center gap-2">
                 <input type="checkbox" id="isPublic" checked={newTemplate.isPublic} onChange={(e) => setNewTemplate({...newTemplate, isPublic: e.target.checked})} className="w-4 h-4" />
