@@ -157,25 +157,6 @@ export default function QuizEditorPage() {
     }
   }
 
-  const convertToTemplate = async () => {
-    if (!confirm('Konversi kuis ini menjadi template?')) return
-    
-    const userStr = localStorage.getItem('qooz_user')
-    if (!userStr) return
-    const user = JSON.parse(userStr)
-
-    const kategori = prompt('Masukkan kategori template:')
-    if (!kategori) return
-
-    try {
-      await api.quiz.convertToTemplate(user.id, quizId, kategori, 'false')
-      alert('Berhasil dikonversi ke template!')
-      router.push('/template')
-    } catch (err) {
-      console.error(err)
-    }
-  }
-
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -230,13 +211,6 @@ export default function QuizEditorPage() {
               ▶ Mulai Game
             </button>
           )}
-
-          <button
-            onClick={convertToTemplate}
-            className="px-4 py-3 bg-blue-100 hover:bg-blue-200 rounded-xl font-semibold text-blue-600 transition-colors"
-          >
-            📋 Simpan sebagai Template
-          </button>
         </div>
 
         {questions.length === 0 ? (
