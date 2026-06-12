@@ -14,7 +14,7 @@ services:
       - .:/app
       - /app/node_modules
     environment:
-      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://192.168.18.126:8080/qooz/api}
+      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://192.168.18.126:8090/qooz/api}
       - NEXT_PUBLIC_POLL_INTERVAL=2000
       - NEXT_PUBLIC_GAME_TIMEOUT=30000
     command: sh -c "npm run dev -- --hostname 0.0.0.0"
@@ -30,7 +30,7 @@ services:
       dockerfile: Dockerfile.api
     container_name: qooz-api
     ports:
-      - "8080:80"
+      - "8090:80"
     volumes:
       - ./mysql-schema.sql:/docker-entrypoint-initdb.d/schema.sql:ro
     depends_on:
@@ -49,7 +49,7 @@ services:
       MYSQL_USER: qooz_user
       MYSQL_PASSWORD: qooz_pass_2024
     ports:
-      - "3306:3306"
+      - "3310:3306"
     volumes:
       - qooz-dbdata:/var/lib/mysql
       - ./mysql-schema.sql:/docker-entrypoint-initdb.d/schema.sql:ro
@@ -66,7 +66,7 @@ services:
     image: docker.io/library/phpmyadmin:latest
     container_name: qooz-pma
     ports:
-      - "8081:80"
+      - "8091:80"
     environment:
       PMA_HOST: qooz-db
       PMA_USER: root

@@ -1,4 +1,4 @@
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/qooz/api';
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8090/qooz/api';
 console.log('API_BASE:', API_BASE);
 
 async function fetchAPI(endpoint: string, data?: Record<string, string>) {
@@ -79,5 +79,30 @@ export const api = {
       fetchAPI('player/index.php', { action: 'score', player_id: playerId }),
     state: (playerId: string) =>
       fetchAPI(`player/index.php?action=state&player_id=${playerId}`),
+  },
+
+  tournament: {
+    list: (userId: string) =>
+      fetchAPI(`tournament/index.php?action=list&user_id=${userId}`),
+    detail: (id: string) =>
+      fetchAPI(`tournament/index.php?action=detail&id=${id}`),
+    create: (userId: string, judul: string, deskripsi: string, maxPeserta: number) =>
+      fetchAPI('tournament/index.php', { action: 'create', user_id: userId, judul, deskripsi, max_peserta: String(maxPeserta) }),
+    delete: (userId: string, tournamentId: string) =>
+      fetchAPI('tournament/index.php', { action: 'delete', user_id: userId, tournament_id: tournamentId }),
+    addParticipant: (tournamentId: string, nama: string) =>
+      fetchAPI('tournament/index.php', { action: 'add_participant', tournament_id: tournamentId, nama }),
+    removeParticipant: (tournamentId: string, participantId: string) =>
+      fetchAPI('tournament/index.php', { action: 'remove_participant', tournament_id: tournamentId, participant_id: participantId }),
+    start: (tournamentId: string, userId: string) =>
+      fetchAPI('tournament/index.php', { action: 'start', tournament_id: tournamentId, user_id: userId }),
+    matchState: (matchId: string) =>
+      fetchAPI(`tournament/index.php?action=match_state&match_id=${matchId}`),
+    finishMatch: (matchId: string, winnerId: string, player1Score: number, player2Score: number) =>
+      fetchAPI('tournament/index.php', { action: 'finish_match', match_id: matchId, winner_id: winnerId, player1_score: String(player1Score), player2_score: String(player2Score) }),
+    advanceRound: (tournamentId: string, userId: string) =>
+      fetchAPI('tournament/index.php', { action: 'advance_round', tournament_id: tournamentId, user_id: userId }),
+    standings: (tournamentId: string) =>
+      fetchAPI(`tournament/index.php?action=standings&tournament_id=${tournamentId}`),
   },
 }

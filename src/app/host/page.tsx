@@ -75,6 +75,23 @@ export default function HostPage() {
     }
   }
 
+  const duplicateQuiz = async (id: string, e: React.MouseEvent) => {
+    e.preventDefault()
+    
+    const userStr = localStorage.getItem('qooz_user')
+    if (!userStr) return
+    const user = JSON.parse(userStr)
+
+    try {
+      const response = await api.quiz.duplicate(user.id, id)
+      if (response.success && response.quiz) {
+        fetchQuizzes(user.id)
+      }
+    } catch (err) {
+      console.error(err)
+    }
+  }
+
   const handleSignOut = () => {
     localStorage.removeItem('qooz_user')
     localStorage.removeItem('qooz_token')
@@ -97,12 +114,26 @@ export default function HostPage() {
             <Link href="/" className="qooz-title text-3xl md:text-4xl">QOOZ</Link>
             <p className="text-white/80 mt-1">Dashboard Guru</p>
           </div>
-          <button
-            onClick={handleSignOut}
-            className="px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg text-white transition-colors"
-          >
-            Keluar
-          </button>
+          <div className="flex gap-2">
+            <Link href="/import" className="px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg text-white">
+              Import
+            </Link>
+            <Link href="/schedule" className="px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg text-white">
+              Jadwal
+            </Link>
+            <Link href="/attendance" className="px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg text-white">
+              Kehadiran
+            </Link>
+            <Link href="/tournament" className="px-4 py-2 bg-yellow-400 hover:bg-yellow-500 rounded-lg text-yellow-900 font-semibold">
+              Turnamen
+            </Link>
+            <button
+              onClick={handleSignOut}
+              className="px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg text-white transition-colors"
+            >
+              Keluar
+            </button>
+          </div>
         </div>
 
         <div className="grid md:grid-cols-3 gap-6 mb-8">
@@ -141,12 +172,22 @@ export default function HostPage() {
                 href={`/host/${quiz.id}`}
                 className="qooz-card hover:scale-105 transition-transform group relative"
               >
-                <button
-                  onClick={(e) => deleteQuiz(quiz.id, e)}
-                  className="absolute top-4 right-4 w-8 h-8 bg-red-100 hover:bg-red-200 rounded-full flex items-center justify-center text-red-600 opacity-0 group-hover:opacity-100 transition-opacity"
-                >
-                  ×
-                </button>
+                <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <button
+                    onClick={(e) => duplicateQuiz(quiz.id, e)}
+                    className="w-8 h-8 bg-blue-100 hover:bg-blue-200 rounded-full flex items-center justify-center text-blue-600"
+                    title="Duplikasi"
+                  >
+                    📋
+                  </button>
+                  <button
+                    onClick={(e) => deleteQuiz(quiz.id, e)}
+                    className="w-8 h-8 bg-red-100 hover:bg-red-200 rounded-full flex items-center justify-center text-red-600"
+                    title="Hapus"
+                  >
+                    ×
+                  </button>
+                </div>
                 <h3 className="text-xl font-bold text-gray-800 mb-2">{quiz.judul}</h3>
                 <p className="text-gray-500 text-sm mb-4 line-clamp-2">
                   {quiz.deskripsi || 'Tidak ada deskripsi'}
