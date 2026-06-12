@@ -124,6 +124,9 @@ export default function HostPage() {
             <Link href="/attendance" className="px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg text-white">
               Kehadiran
             </Link>
+            <Link href="/tournament" className="px-4 py-2 bg-yellow-400 hover:bg-yellow-500 rounded-lg text-yellow-900 font-semibold">
+              Turnamen
+            </Link>
             <button
               onClick={handleSignOut}
               className="px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg text-white transition-colors"

@@ -188,6 +188,68 @@ CREATE TABLE IF NOT EXISTS answers (
 );
 
 -- =====================================================
+-- TOURNAMENTS TABLE
+-- =====================================================
+CREATE TABLE IF NOT EXISTS tournaments (
+    id VARCHAR(36) PRIMARY KEY,
+    user_id VARCHAR(36) NOT NULL,
+    judul VARCHAR(255) NOT NULL,
+    deskripsi TEXT,
+    bracket_type VARCHAR(20) DEFAULT 'single_elimination',
+    status VARCHAR(20) DEFAULT 'setup',
+    max_participants INT DEFAULT 16,
+    current_round INT DEFAULT 0,
+    total_rounds INT DEFAULT 0,
+    code VARCHAR(8) UNIQUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    INDEX idx_user_id (user_id),
+    INDEX idx_status (status),
+    INDEX idx_code (code)
+);
+
+-- =====================================================
+-- TOURNAMENT PARTICIPANTS TABLE
+-- =====================================================
+CREATE TABLE IF NOT EXISTS tournament_participants (
+    id VARCHAR(36) PRIMARY KEY,
+    tournament_id VARCHAR(36) NOT NULL,
+    nama_peserta VARCHAR(100) NOT NULL,
+    seed INT DEFAULT 0,
+    status VARCHAR(20) DEFAULT 'active',
+    skor_total INT DEFAULT 0,
+    joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (tournament_id) REFERENCES tournaments(id) ON DELETE CASCADE,
+    INDEX idx_tournament_id (tournament_id),
+    INDEX idx_tournament_status (tournament_id, status)
+);
+
+-- =====================================================
+-- TOURNAMENT MATCHES TABLE
+-- =====================================================
+CREATE TABLE IF NOT EXISTS tournament_matches (
+    id VARCHAR(36) PRIMARY KEY,
+    tournament_id VARCHAR(36) NOT NULL,
+    round INT NOT NULL,
+    match_index INT NOT NULL,
+    player1_id VARCHAR(36),
+    player2_id VARCHAR(36),
+    player1_score INT DEFAULT 0,
+    player2_score INT DEFAULT 0,
+    winner_id VARCHAR(36),
+    status VARCHAR(20) DEFAULT 'pending',
+    session_id VARCHAR(36),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (tournament_id) REFERENCES tournaments(id) ON DELETE CASCADE,
+    FOREIGN KEY (player1_id) REFERENCES tournament_participants(id) ON DELETE SET NULL,
+    FOREIGN KEY (player2_id) REFERENCES tournament_participants(id) ON DELETE SET NULL,
+    FOREIGN KEY (winner_id) REFERENCES tournament_participants(id) ON DELETE SET NULL,
+    FOREIGN KEY (session_id) REFERENCES game_sessions(id) ON DELETE SET NULL,
+    INDEX idx_tournament_round (tournament_id, round)
+);
+
+-- =====================================================
 -- PROCEDURE: Generate 6-digit PIN
 -- =====================================================
 DELIMITER //

@@ -69,3 +69,55 @@ export type GameStatus = 'lobby' | 'playing' | 'finished'
 export interface LeaderboardEntry extends Player {
   rank: number
 }
+
+// ===== TOURNAMENT TYPES =====
+
+export type BracketType = 'single_elimination'
+export type TournamentStatus = 'setup' | 'active' | 'finished'
+export type ParticipantStatus = 'active' | 'eliminated' | 'winner'
+export type MatchStatus = 'pending' | 'playing' | 'finished'
+
+export interface Tournament {
+  id: string
+  user_id: string
+  judul: string
+  deskripsi: string | null
+  bracket_type: BracketType
+  status: TournamentStatus
+  max_participants: number
+  current_round: number
+  total_rounds: number
+  code: string
+  total_peserta?: number
+  created_at: string
+  updated_at: string
+  participants?: TournamentParticipant[]
+  matches?: TournamentMatch[]
+}
+
+export interface TournamentParticipant {
+  id: string
+  tournament_id: string
+  nama_peserta: string
+  seed: number
+  status: ParticipantStatus
+  skor_total: number
+  joined_at: string
+}
+
+export interface TournamentMatch {
+  id: string
+  tournament_id: string
+  round: number
+  match_index: number
+  player1_id: string | null
+  player2_id: string | null
+  player1_score: number
+  player2_score: number
+  winner_id: string | null
+  status: MatchStatus
+  session_id: string | null
+  created_at: string
+  player1?: TournamentParticipant
+  player2?: TournamentParticipant
+}

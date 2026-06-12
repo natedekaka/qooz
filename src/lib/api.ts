@@ -1,4 +1,4 @@
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/qooz/api';
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8090/qooz/api';
 console.log('API_BASE:', API_BASE);
 
 async function fetchAPI(endpoint: string, data?: Record<string, string>) {
@@ -47,53 +47,12 @@ export const api = {
       fetchAPI('quiz/index.php', { action: 'create', user_id: userId, judul, deskripsi }),
     delete: (userId: string, quizId: string) =>
       fetchAPI('quiz/index.php', { action: 'delete', user_id: userId, quiz_id: quizId }),
-    duplicate: (userId: string, quizId: string) =>
-      fetchAPI('quiz/index.php', { action: 'duplicate', user_id: userId, quiz_id: quizId }),
     addQuestion: (userId: string, quizId: string, soal: string, opsi1: string, opsi2: string, opsi3: string, opsi4: string, jawaban: string | number, waktu: string | number) =>
       fetchAPI('quiz/index.php', { action: 'add_question', user_id: userId, quiz_id: quizId, soal, opsi_1: opsi1, opsi_2: opsi2, opsi_3: opsi3, opsi_4: opsi4, jawaban_benar: String(jawaban), waktu_detik: String(waktu) }),
     updateQuestion: (userId: string, questionId: string, soal: string, opsi1: string, opsi2: string, opsi3: string, opsi4: string, jawaban: string | number, waktu: string | number) =>
       fetchAPI('quiz/index.php', { action: 'update_question', user_id: userId, question_id: questionId, soal, opsi_1: opsi1, opsi_2: opsi2, opsi_3: opsi3, opsi_4: opsi4, jawaban_benar: String(jawaban), waktu_detik: String(waktu) }),
     deleteQuestion: (userId: string, quizId: string, questionId: string) =>
       fetchAPI('quiz/index.php', { action: 'delete_question', user_id: userId, quiz_id: quizId, question_id: questionId }),
-  },
-
-  template: {
-    list: (userId: string, includePublic: boolean = false) =>
-      fetchAPI(`template/index.php?action=list&user_id=${userId}&include_public=${includePublic}`),
-    detail: (id: string) =>
-      fetchAPI(`template/index.php?action=detail&id=${id}`),
-    create: (userId: string, judul: string, deskripsi: string, kategori: string, isPublic: boolean) =>
-      fetchAPI('template/index.php', { action: 'create', user_id: userId, judul, deskripsi, kategori, is_public: String(isPublic) }),
-    duplicate: (userId: string, templateId: string) =>
-      fetchAPI('template/index.php', { action: 'duplicate', user_id: userId, template_id: templateId }),
-    delete: (userId: string, templateId: string) =>
-      fetchAPI('template/index.php', { action: 'delete', user_id: userId, template_id: templateId }),
-    useTemplate: (userId: string, templateId: string, judul: string) =>
-      fetchAPI('template/index.php', { action: 'use_template', user_id: userId, template_id: templateId, judul }),
-  },
-
-  schedule: {
-    list: (userId: string) =>
-      fetchAPI(`schedule/index.php?action=list&user_id=${userId}`),
-    upcoming: () =>
-      fetchAPI('schedule/index.php?action=upcoming'),
-    create: (userId: string, quizId: string, scheduledAt: string, maxPlayers: number) =>
-      fetchAPI('schedule/index.php', { action: 'create', user_id: userId, quiz_id: quizId, scheduled_at: scheduledAt, max_players: String(maxPlayers) }),
-    cancel: (userId: string, scheduleId: string) =>
-      fetchAPI('schedule/index.php', { action: 'cancel', user_id: userId, schedule_id: scheduleId }),
-    start: (userId: string, scheduleId: string) =>
-      fetchAPI('schedule/index.php', { action: 'start', user_id: userId, schedule_id: scheduleId }),
-    delete: (userId: string, scheduleId: string) =>
-      fetchAPI('schedule/index.php', { action: 'delete', user_id: userId, schedule_id: scheduleId }),
-  },
-
-  attendance: {
-    list: (scheduleId?: string, sessionId?: string) =>
-      fetchAPI(`attendance/index.php?action=list&${scheduleId ? 'schedule_id=' + scheduleId : 'session_id=' + sessionId}`),
-    summary: (scheduleId?: string, userId?: string) =>
-      fetchAPI(`attendance/index.php?action=summary&${scheduleId ? 'schedule_id=' + scheduleId : 'user_id=' + userId}`),
-    record: (sessionId: string, scheduledQuizId: string, playerId: string, namaSiswa: string, hadir: boolean, skor: number, rankedPosition: number) =>
-      fetchAPI('attendance/index.php', { action: 'record', session_id: sessionId, scheduled_quiz_id: scheduledQuizId, player_id: playerId, nama_siswa: namaSiswa, hadir: String(hadir), skor: String(skor), ranked_position: String(rankedPosition) }),
   },
 
   game: {
@@ -120,5 +79,30 @@ export const api = {
       fetchAPI('player/index.php', { action: 'score', player_id: playerId }),
     state: (playerId: string) =>
       fetchAPI(`player/index.php?action=state&player_id=${playerId}`),
+  },
+
+  tournament: {
+    list: (userId: string) =>
+      fetchAPI(`tournament/index.php?action=list&user_id=${userId}`),
+    detail: (id: string) =>
+      fetchAPI(`tournament/index.php?action=detail&id=${id}`),
+    create: (userId: string, judul: string, deskripsi: string, maxPeserta: number) =>
+      fetchAPI('tournament/index.php', { action: 'create', user_id: userId, judul, deskripsi, max_peserta: String(maxPeserta) }),
+    delete: (userId: string, tournamentId: string) =>
+      fetchAPI('tournament/index.php', { action: 'delete', user_id: userId, tournament_id: tournamentId }),
+    addParticipant: (tournamentId: string, nama: string) =>
+      fetchAPI('tournament/index.php', { action: 'add_participant', tournament_id: tournamentId, nama }),
+    removeParticipant: (tournamentId: string, participantId: string) =>
+      fetchAPI('tournament/index.php', { action: 'remove_participant', tournament_id: tournamentId, participant_id: participantId }),
+    start: (tournamentId: string, userId: string) =>
+      fetchAPI('tournament/index.php', { action: 'start', tournament_id: tournamentId, user_id: userId }),
+    matchState: (matchId: string) =>
+      fetchAPI(`tournament/index.php?action=match_state&match_id=${matchId}`),
+    finishMatch: (matchId: string, winnerId: string, player1Score: number, player2Score: number) =>
+      fetchAPI('tournament/index.php', { action: 'finish_match', match_id: matchId, winner_id: winnerId, player1_score: String(player1Score), player2_score: String(player2Score) }),
+    advanceRound: (tournamentId: string, userId: string) =>
+      fetchAPI('tournament/index.php', { action: 'advance_round', tournament_id: tournamentId, user_id: userId }),
+    standings: (tournamentId: string) =>
+      fetchAPI(`tournament/index.php?action=standings&tournament_id=${tournamentId}`),
   },
 }
