@@ -1,4 +1,4 @@
-version: '3.8'
+name: qooz
 
 services:
   # Development mode - hot reload aktif, akses HP mudah
@@ -14,7 +14,7 @@ services:
       - .:/app
       - /app/node_modules
     environment:
-      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://192.168.18.126:8090/qooz/api}
+      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://localhost:8090/qooz/api}
       - NEXT_PUBLIC_POLL_INTERVAL=2000
       - NEXT_PUBLIC_GAME_TIMEOUT=30000
     command: sh -c "npm run dev -- --hostname 0.0.0.0"
@@ -31,8 +31,6 @@ services:
     container_name: qooz-api
     ports:
       - "8090:80"
-    volumes:
-      - ./mysql-schema.sql:/docker-entrypoint-initdb.d/schema.sql:ro
     depends_on:
       qooz-db:
         condition: service_healthy
