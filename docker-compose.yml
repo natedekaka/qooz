@@ -14,7 +14,7 @@ services:
       - .:/app
       - /app/node_modules
     environment:
-      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://192.168.18.126:8090/qooz/api}
+      - API_PROXY_TARGET=http://qooz-api/qooz/api
       - NEXT_PUBLIC_POLL_INTERVAL=2000
       - NEXT_PUBLIC_GAME_TIMEOUT=30000
     command: sh -c "npm run dev -- --hostname 0.0.0.0"

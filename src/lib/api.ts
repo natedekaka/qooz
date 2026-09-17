@@ -1,4 +1,4 @@
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8090/qooz/api';
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || '/proxy';
 console.log('API_BASE:', API_BASE);
 
 async function fetchAPI(endpoint: string, data?: Record<string, string>) {
