@@ -104,7 +104,7 @@ if ($method === 'POST') {
         $jawabanInt = intval($jawaban);
         $waktuMsInt = intval($waktuMs);
         
-        $sql = "INSERT INTO answers (id, player_id, question_id, session_id, jawaban_dipilih, waktu_respon_ms) VALUES ('$id', '$playerId', '$questionId', '$sessionId', $jawabanInt, $waktuMsInt)";
+        $sql = "INSERT INTO answers (id, player_id, question_id, session_id, jawaban_dipilih, waktu_respon_ms, poin_didapat) VALUES ('$id', '$playerId', '$questionId', '$sessionId', $jawabanInt, $waktuMsInt, NULL)";
         error_log("answer: Executing SQL: $sql");
         
         $result = conn()->query($sql);

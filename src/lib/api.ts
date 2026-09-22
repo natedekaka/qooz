@@ -47,6 +47,8 @@ export const api = {
       fetchAPI('quiz/index.php', { action: 'create', user_id: userId, judul, deskripsi }),
     delete: (userId: string, quizId: string) =>
       fetchAPI('quiz/index.php', { action: 'delete', user_id: userId, quiz_id: quizId }),
+    duplicate: (userId: string, quizId: string) =>
+      fetchAPI('quiz/index.php', { action: 'duplicate', user_id: userId, quiz_id: quizId }),
     addQuestion: (userId: string, quizId: string, soal: string, opsi1: string, opsi2: string, opsi3: string, opsi4: string, jawaban: string | number, waktu: string | number) =>
       fetchAPI('quiz/index.php', { action: 'add_question', user_id: userId, quiz_id: quizId, soal, opsi_1: opsi1, opsi_2: opsi2, opsi_3: opsi3, opsi_4: opsi4, jawaban_benar: String(jawaban), waktu_detik: String(waktu) }),
     updateQuestion: (userId: string, questionId: string, soal: string, opsi1: string, opsi2: string, opsi3: string, opsi4: string, jawaban: string | number, waktu: string | number) =>
@@ -62,6 +64,8 @@ export const api = {
       fetchAPI(`game/index.php?action=state&session_id=${sessionId}`),
     byPin: (pin: string) =>
       fetchAPI(`game/index.php?action=by_pin&pin=${pin}`),
+    recap: (quizId: string) =>
+      fetchAPI(`game/index.php?action=recap&quiz_id=${quizId}`),
     start: (sessionId: string) =>
       fetchAPI('game/index.php', { action: 'start', session_id: sessionId }),
     next: (sessionId: string) =>

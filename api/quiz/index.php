@@ -110,7 +110,7 @@ if ($method === 'POST') {
         
         if ($stmt->execute()) {
             conn()->query("INSERT INTO questions (id, quiz_id, nomor_soal, teks_soal, opsi_1, opsi_2, opsi_3, opsi_4, jawaban_benar, waktu_detik) 
-                          SELECT CONCAT(UUID(), '-', ROW_NUMBER() OVER()), '$newId', nomor_soal, teks_soal, opsi_1, opsi_2, opsi_3, opsi_4, jawaban_benar, waktu_detik 
+                          SELECT SUBSTRING(UUID(), 1, 36), '$newId', nomor_soal, teks_soal, opsi_1, opsi_2, opsi_3, opsi_4, jawaban_benar, waktu_detik 
                           FROM questions WHERE quiz_id = '$quizId'");
             
             response(['success' => true, 'quiz' => ['id' => $newId, 'judul' => $newJudul]]);
@@ -143,7 +143,7 @@ if ($method === 'POST') {
         
         if ($stmt->execute()) {
             conn()->query("INSERT INTO template_questions (id, template_id, nomor_soal, teks_soal, opsi_1, opsi_2, opsi_3, opsi_4, jawaban_benar, waktu_detik) 
-                          SELECT CONCAT(UUID(), '-', ROW_NUMBER() OVER()), '$templateId', nomor_soal, teks_soal, opsi_1, opsi_2, opsi_3, opsi_4, jawaban_benar, waktu_detik 
+                          SELECT SUBSTRING(UUID(), 1, 36), '$templateId', nomor_soal, teks_soal, opsi_1, opsi_2, opsi_3, opsi_4, jawaban_benar, waktu_detik 
                           FROM questions WHERE quiz_id = '$quizId'");
             
             response(['success' => true, 'template' => ['id' => $templateId]]);

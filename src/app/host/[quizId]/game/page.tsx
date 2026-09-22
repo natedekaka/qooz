@@ -81,6 +81,7 @@ export default function GameHostPage() {
         setCurrentQuestion(response.question)
         setTimeLeft(response.question.waktu_detik)
       }
+      setSession(prev => prev ? { ...prev, question_index: response.question_index ?? 0 } : prev)
       
       setTimeout(() => {
         setGamePhase('playing')
@@ -108,6 +109,9 @@ export default function GameHostPage() {
         setCurrentQuestion(null)
       } else if (response.question) {
         setCurrentQuestion(response.question)
+        if (response.question_index !== undefined) {
+          setSession(prev => prev ? { ...prev, question_index: response.question_index } : prev)
+        }
         setTimeLeft(response.question.waktu_detik || 20)
         
         setTimeout(() => {

@@ -92,6 +92,57 @@ export default function HostPage() {
     }
   }
 
+  const downloadScores = async (quiz: Quiz, e: React.MouseEvent) => {
+    e.preventDefault()
+
+    try {
+      const response = await api.game.recap(quiz.id)
+      const sessions = response.sessions || []
+      const quizData = quizzes.find(q => q.id === quiz.id)
+
+      const csvLines: string[] = [
+        `QOOZ - Rekap Skor Kuis`,
+        `Kuis: ${quizData?.judul || quiz.judul}`,
+        `Diunduh: ${new Date().toLocaleString('id-ID')}`,
+        '',
+        'Sesi/PIN,Tanggal,Status,No,Nama,Skor',
+      ]
+
+      for (const session of sessions) {
+        const players = session.players || []
+        const tanggal = session.created_at ? new Date(session.created_at).toLocaleString('id-ID') : '-'
+        const status = session.status === 'finished' ? 'Selesai' : session.status === 'playing' ? 'Berlangsung' : 'Lobby'
+
+        if (players.length === 0) {
+          csvLines.push(`"${session.pin}","${tanggal}","${status}",-,-,-`)
+          continue
+        }
+
+        const sorted = [...players].sort((a, b) => b.skor_total - a.skor_total)
+        sorted.forEach((p, i) => {
+          csvLines.push(`"${session.pin}","${tanggal}","${status}",${i + 1},"${p.nama_siswa}",${p.skor_total}`)
+        })
+      }
+
+      if (sessions.length === 0) {
+        csvLines.push('Belum ada sesi game untuk kuis ini.')
+      }
+
+      const blob = new Blob([csvLines.join('\n')], { type: 'text/csv;charset=utf-8;' })
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `qooz-rekap-${quiz.id.slice(0, 8)}-${new Date().toISOString().split('T')[0]}.csv`
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      URL.revokeObjectURL(url)
+    } catch (err) {
+      console.error(err)
+      alert('Gagal mengunduh skor')
+    }
+  }
+
   const handleSignOut = () => {
     localStorage.removeItem('qooz_user')
     localStorage.removeItem('qooz_token')
@@ -173,6 +224,13 @@ export default function HostPage() {
                 className="qooz-card hover:scale-105 transition-transform group relative"
               >
                 <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <button
+                    onClick={(e) => downloadScores(quiz, e)}
+                    className="w-8 h-8 bg-green-100 hover:bg-green-200 rounded-full flex items-center justify-center text-green-600"
+                    title="Download Skor"
+                  >
+                    ⬇️
+                  </button>
                   <button
                     onClick={(e) => duplicateQuiz(quiz.id, e)}
                     className="w-8 h-8 bg-blue-100 hover:bg-blue-200 rounded-full flex items-center justify-center text-blue-600"

@@ -84,6 +84,39 @@ if ($method === 'GET' && $action === 'by_pin') {
     response(['session' => $session]);
 }
 
+// Get score recap for a quiz (all sessions, any status) - for teacher download anytime
+if ($method === 'GET' && $action === 'recap') {
+    $quizId = $_GET['quiz_id'] ?? '';
+    
+    if (!$quizId) {
+        response(['error' => 'Quiz ID required'], 400);
+    }
+    
+    $sessionsResult = conn()->query("
+        SELECT id, pin, status, question_index, started_at, ended_at, created_at
+        FROM game_sessions
+        WHERE quiz_id = '$quizId'
+        ORDER BY created_at DESC
+    ");
+    $sessions = [];
+    while ($sess = $sessionsResult->fetch_assoc()) {
+        $playersResult = conn()->query("
+            SELECT id, nama_siswa, skor_total, is_active, joined_at
+            FROM players
+            WHERE session_id = '{$sess['id']}'
+            ORDER BY skor_total DESC
+        ");
+        $players = [];
+        while ($p = $playersResult->fetch_assoc()) {
+            $players[] = $p;
+        }
+        $sess['players'] = $players;
+        $sessions[] = $sess;
+    }
+    
+    response(['sessions' => $sessions]);
+}
+
 if ($method === 'POST') {
     $action = $_POST['action'] ?? '';
     
@@ -131,7 +164,7 @@ if ($method === 'POST') {
             conn()->query("UPDATE game_sessions SET question_index = 0, current_question_id = '{$question['id']}' WHERE id = '$sessionId'");
         }
         
-        response(['success' => true, 'question' => $question]);
+        response(['success' => true, 'question' => $question, 'question_index' => 0]);
     }
     
     // Next question
@@ -154,11 +187,11 @@ if ($method === 'POST') {
         if ($nextIndex >= count($questions)) {
             // Game finished
             conn()->query("UPDATE game_sessions SET status = 'finished', ended_at = NOW() WHERE id = '$sessionId'");
-            response(['success' => true, 'finished' => true]);
+            response(['success' => true, 'finished' => true, 'question_index' => $nextIndex]);
         } else {
             $nextQuestion = $questions[$nextIndex];
             conn()->query("UPDATE game_sessions SET question_index = $nextIndex, current_question_id = '{$nextQuestion['id']}' WHERE id = '$sessionId'");
-            response(['success' => true, 'question' => $nextQuestion, 'finished' => false]);
+            response(['success' => true, 'question' => $nextQuestion, 'finished' => false, 'question_index' => $nextIndex]);
         }
     }
     
@@ -180,8 +213,8 @@ if ($method === 'POST') {
         // Debug: log what's being compared
         error_log("end_question: session_id=$sessionId, question_id={$session['current_question_id']}, jawaban_benar={$question['jawaban_benar']}");
         
-        // Get answers for THIS question (current_question_id)
-        $aResult = conn()->query("SELECT * FROM answers WHERE session_id = '$sessionId' AND question_id = '{$session['current_question_id']}'");
+        // Get answers for THIS question (current_question_id) that have NOT been scored yet
+        $aResult = conn()->query("SELECT * FROM answers WHERE session_id = '$sessionId' AND question_id = '{$session['current_question_id']}' AND poin_didapat IS NULL");
         
         // Debug: log each answer
         while ($answer = $aResult->fetch_assoc()) {
@@ -189,36 +222,46 @@ if ($method === 'POST') {
         }
         
         // Reset pointer for actual processing
-        $aResult = conn()->query("SELECT * FROM answers WHERE session_id = '$sessionId' AND question_id = '{$session['current_question_id']}'");
+        $aResult = conn()->query("SELECT * FROM answers WHERE session_id = '$sessionId' AND question_id = '{$session['current_question_id']}' AND poin_didapat IS NULL");
         
         // Debug: log what's being compared
         error_log("end_question: session_id=$sessionId, question_id={$session['current_question_id']}, jawaban_benar={$question['jawaban_benar']}");
         
-        while ($answer = $aResult->fetch_assoc()) {
-            // Explicitly cast to integers for comparison
-            $jawabanDipilih = intval($answer['jawaban_dipilih']);
-            $jawabanBenar = intval($question['jawaban_benar']);
-            $isCorrect = ($jawabanDipilih === $jawabanBenar);
-            $points = 0;
-            
-            if ($isCorrect) {
-                $waktuMs = $answer['waktu_respon_ms'] ?? ($question['waktu_detik'] * 1000);
-                $waktuMs = max(0, min($waktuMs, $question['waktu_detik'] * 1000));
-                
-                $maxPoints = 1000;
-                $minPoints = 500;
-                $ratio = 1 - ($waktuMs / ($question['waktu_detik'] * 1000));
-                $ratio = max(0, min(1, $ratio));
-                $points = round($maxPoints - ($maxPoints - $minPoints) * $ratio);
-                $points = max($minPoints, $points);
-            }
-            
-            // Update answer
-            conn()->query("UPDATE answers SET is_correct = " . ($isCorrect ? 1 : 0) . ", poin_didapat = $points WHERE id = '{$answer['id']}'");
-            
-            // Update player score
-            if ($points > 0) {
-                conn()->query("UPDATE players SET skor_total = skor_total + $points WHERE id = '{$answer['player_id']}'");
+        if ($aResult->num_rows > 0) {
+            conn()->begin_transaction();
+            try {
+                while ($answer = $aResult->fetch_assoc()) {
+                    // Explicitly cast to integers for comparison
+                    $jawabanDipilih = intval($answer['jawaban_dipilih']);
+                    $jawabanBenar = intval($question['jawaban_benar']);
+                    $isCorrect = ($jawabanDipilih === $jawabanBenar);
+                    $points = 0;
+                    
+                    if ($isCorrect) {
+                        $waktuMs = $answer['waktu_respon_ms'] ?? ($question['waktu_detik'] * 1000);
+                        $waktuMs = max(0, min($waktuMs, $question['waktu_detik'] * 1000));
+                        
+                        $maxPoints = 1000;
+                        $minPoints = 500;
+                        $ratio = 1 - ($waktuMs / ($question['waktu_detik'] * 1000));
+                        $ratio = max(0, min(1, $ratio));
+                        $points = round($minPoints + ($maxPoints - $minPoints) * $ratio);
+                        $points = max($minPoints, min($maxPoints, $points));
+                    }
+                    
+                    // Update answer (sets poin_didapat so it won't be re-scored)
+                    conn()->query("UPDATE answers SET is_correct = " . ($isCorrect ? 1 : 0) . ", poin_didapat = $points WHERE id = '{$answer['id']}'");
+                    
+                    // Update player score
+                    if ($points > 0) {
+                        conn()->query("UPDATE players SET skor_total = skor_total + $points WHERE id = '{$answer['player_id']}'");
+                    }
+                }
+                conn()->commit();
+            } catch (Throwable $e) {
+                conn()->rollback();
+                error_log("end_question transaction error: " . $e->getMessage());
+                response(['error' => 'Gagal proses skor'], 500);
             }
         }
         

@@ -93,26 +93,6 @@ CREATE TABLE IF NOT EXISTS scheduled_quizzes (
 );
 
 -- =====================================================
--- ATTENDANCE TABLE (Rekap Kehadiran)
--- =====================================================
-CREATE TABLE IF NOT EXISTS attendance (
-    id VARCHAR(36) PRIMARY KEY,
-    session_id VARCHAR(36),
-    scheduled_quiz_id VARCHAR(36),
-    player_id VARCHAR(36),
-    nama_siswa VARCHAR(100),
-    hadir BOOLEAN DEFAULT FALSE,
-    skor INT DEFAULT 0,
-    ranked_position INT,
-    attendance_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (session_id) REFERENCES game_sessions(id) ON DELETE SET NULL,
-    FOREIGN KEY (scheduled_quiz_id) REFERENCES scheduled_quizzes(id) ON DELETE SET NULL,
-    FOREIGN KEY (player_id) REFERENCES players(id) ON DELETE SET NULL,
-    INDEX idx_session_id (session_id),
-    INDEX idx_scheduled_quiz_id (scheduled_quiz_id)
-);
-
--- =====================================================
 -- QUESTIONS TABLE
 -- =====================================================
 CREATE TABLE IF NOT EXISTS questions (
@@ -185,6 +165,26 @@ CREATE TABLE IF NOT EXISTS answers (
     INDEX idx_player_id (player_id),
     INDEX idx_question_id (question_id),
     INDEX idx_session_id (session_id)
+);
+
+-- =====================================================
+-- ATTENDANCE TABLE (Rekap Kehadiran)
+-- =====================================================
+CREATE TABLE IF NOT EXISTS attendance (
+    id VARCHAR(36) PRIMARY KEY,
+    session_id VARCHAR(36),
+    scheduled_quiz_id VARCHAR(36),
+    player_id VARCHAR(36),
+    nama_siswa VARCHAR(100),
+    hadir BOOLEAN DEFAULT FALSE,
+    skor INT DEFAULT 0,
+    ranked_position INT,
+    attendance_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (session_id) REFERENCES game_sessions(id) ON DELETE SET NULL,
+    FOREIGN KEY (scheduled_quiz_id) REFERENCES scheduled_quizzes(id) ON DELETE SET NULL,
+    FOREIGN KEY (player_id) REFERENCES players(id) ON DELETE SET NULL,
+    INDEX idx_session_id (session_id),
+    INDEX idx_scheduled_quiz_id (scheduled_quiz_id)
 );
 
 -- =====================================================
